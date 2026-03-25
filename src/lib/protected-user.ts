@@ -10,6 +10,8 @@
 
 const PROTECTED_EMAILS: string[] = [
   "magdyyuossef18@gmail.com",
+  "zezo.magd30@gmail.com"
+   
 ]
 
 /**

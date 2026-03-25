@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { User, Lock, Save, Camera, Eye, EyeOff } from "lucide-react"
+import { User, Lock, Save, Camera, Eye, EyeOff, ShieldAlert, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
 
 export default function SettingsPage() {
   const { data: session, update } = useSession()
@@ -15,6 +15,10 @@ export default function SettingsPage() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ text: "", type: "" })
+
+  const isAdmin = ["OWNER", "MANAGER", "SELLER", "SUPPORT"].includes(session?.user?.role as string)
+  const [selectedRole, setSelectedRole] = useState(session?.user?.role || "USER")
+  const [showRoleDialog, setShowRoleDialog] = useState(false)
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,6 +67,33 @@ export default function SettingsPage() {
         setMessage({ text: "Password changed successfully!", type: "success" })
         setCurrentPassword("")
         setNewPassword("")
+      } else {
+        setMessage({ text: await res.text(), type: "error" })
+      }
+    } catch (e) {
+      setMessage({ text: "Something went wrong.", type: "error" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleUpdateRole = async () => {
+    setIsLoading(true)
+    setShowRoleDialog(false)
+    setMessage({ text: "", type: "" })
+
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: selectedRole })
+      })
+
+      if (res.ok) {
+        setMessage({ text: "Role updated successfully! Reloading...", type: "success" })
+        // Force session update and reload page
+        await update({ role: selectedRole })
+        setTimeout(() => window.location.reload(), 1500)
       } else {
         setMessage({ text: await res.text(), type: "error" })
       }
@@ -203,7 +234,82 @@ export default function SettingsPage() {
             </button>
           </form>
         </div>
+
+        {/* Role Management (Admins Only) */}
+        {isAdmin && (
+          <div className="bg-[#141417] border border-[#27272a] rounded-xl p-6 relative overflow-hidden">
+            {/* Glowing Accent */}
+            <div className="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-red-500 to-orange-500" />
+            
+            <h2 className="text-xl font-bold text-white mb-6 border-b border-[#27272a] pb-4 flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-red-500" /> Role & Permissions
+            </h2>
+            
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#09090b] p-4 rounded-lg border border-[#27272a]">
+              <div>
+                <p className="text-sm font-bold text-white mb-1">Account Role</p>
+                <p className="text-xs text-gray-500">Change your active management permissions.</p>
+              </div>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <select 
+                  disabled={isLoading} 
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="bg-[#141417] text-xs font-bold px-3 py-2 sm:py-2.5 flex-1 sm:flex-none rounded-lg border outline-none cursor-pointer transition-all text-gray-300 border-[#27272a] hover:border-red-500/50 focus:border-red-500 disabled:opacity-50"
+                  dir="ltr"
+                >
+                  <option value="USER">USER</option>
+                  <option value="SUPPORT">SUPPORT</option>
+                  <option value="SELLER">SELLER</option>
+                  <option value="MANAGER">MANAGER</option>
+                  <option value="OWNER">OWNER</option>
+                </select>
+                <button
+                  onClick={() => setShowRoleDialog(true)}
+                  disabled={isLoading || selectedRole === session?.user?.role}
+                  className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2 sm:py-2.5 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shadow-[0_0_10px_rgba(239,68,68,0.2)] hover:shadow-[0_0_15px_rgba(239,68,68,0.4)]"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Confirmation Dialog */}
+      {showRoleDialog && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowRoleDialog(false)} />
+          <div className="relative bg-[#141417] border border-[#27272a] rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200" dir="rtl">
+            <div className="flex flex-col items-center text-center">
+              <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center mb-4 border border-red-500/20">
+                <AlertTriangle className="h-6 w-6 text-red-500" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">تأكيد تغيير الرتبة</h3>
+              <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+                هل أنت متأكد أنك تريد تغيير رتبتك إلى <strong className="text-red-400 font-mono tracking-wider">{selectedRole}</strong>؟ 
+                <br/><br/>
+                سيؤدي هذا لتغيير صلاحياتك في لوحة التحكم وتحديث الصفحة فوراً.
+              </p>
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={handleUpdateRole}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="h-4 w-4" /> نعم، متأكد
+                </button>
+                <button
+                  onClick={() => setShowRoleDialog(false)}
+                  className="flex-1 bg-[#27272a] hover:bg-[#3f3f46] text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <XCircle className="h-4 w-4" /> إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

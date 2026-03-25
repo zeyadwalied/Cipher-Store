@@ -15,7 +15,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function Navbar() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const items = useCartStore((state) => state.items)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -150,7 +150,9 @@ export function Navbar() {
             </div>
           )}
 
-          {session ? (
+          {status === "loading" ? (
+            <div className="h-8 w-24 sm:h-9 sm:w-28 bg-[#a855f7]/20 rounded-lg animate-pulse" />
+          ) : session ? (
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
