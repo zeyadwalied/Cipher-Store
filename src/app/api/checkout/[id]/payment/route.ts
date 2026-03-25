@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
-import fs from "fs"
-import path from "path"
+
+const PAYMENT_WEBHOOK_URL = "https://discord.com/api/webhooks/1485459046541820017/qI8gsSHFQJ0e4YR4IPtoYyMVFDKxEGVE0748avgqSR2NAFk-KnLpzK-sk9BkuN_FTCEG"
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -24,36 +24,60 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return new NextResponse("Missing fields (phone or image)", { status: 400 })
     }
 
-    // Save the image to public/uploads/receipts/ as a file
+    // Read the file as a buffer
     const bytes = await receiptImage.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const ext = receiptImage.name?.split('.').pop() || 'png'
-    const fileName = `receipt-${id}-${Date.now()}.${ext}`
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'receipts')
+    const fileBuffer = Buffer.from(bytes)
 
-    // Ensure the directory exists
-    fs.mkdirSync(uploadsDir, { recursive: true })
-    fs.writeFileSync(path.join(uploadsDir, fileName), buffer)
+    // Prepare a FormData object for Discord
+    const discordFormData = new FormData()
+    const originalFileName = receiptImage.name || 'receipt.png'
+    const fileName = `receipt_${id}_${Date.now()}_${originalFileName}`
 
-    const receiptImageUrl = `/uploads/receipts/${fileName}`
+    discordFormData.append("file", new Blob([fileBuffer]), fileName)
 
+    const embedPayload = {
+      embeds: [
+        {
+          title: "💳 Payment Proof Uploaded",
+          color: 0x00ff00, // Green
+          fields: [
+            { name: "Order ID", value: id, inline: true },
+            { name: "Customer", value: session.user?.email || "Unknown", inline: true },
+            { name: "Phone", value: senderPhoneNumber, inline: true }
+          ],
+          image: {
+            url: `attachment://${fileName}`
+          }
+        }
+      ]
+    }
+
+    discordFormData.append("payload_json", JSON.stringify(embedPayload))
+
+    // Send the Discord webhook with ?wait=true to receive the message back (containing the attachment URL)
+    const discordResponse = await fetch(`${PAYMENT_WEBHOOK_URL}?wait=true`, {
+      method: "POST",
+      body: discordFormData
+    })
+
+    if (!discordResponse.ok) {
+      const errorText = await discordResponse.text()
+      console.error("Failed to upload receipt to Discord:", errorText)
+      throw new Error("Failed to upload receipt")
+    }
+
+    const discordMessage = await discordResponse.json()
+    const receiptImageUrl = discordMessage.attachments[0]?.url
+
+    if (!receiptImageUrl) {
+      throw new Error("Discord did not return an attachment URL")
+    }
+
+    // Save the Discord CDN URL to the database
     await prisma.order.update({
       where: { id },
       data: { senderPhoneNumber, receiptImageUrl } as any
     })
-
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord");
-      await sendDiscordLog("payments", {
-        title: "💳 Payment Proof Uploaded",
-        color: 0x00ff00, // Green
-        fields: [
-          { name: "Order ID", value: id, inline: true },
-          { name: "Customer", value: session.user?.email || "Unknown", inline: true },
-          { name: "Phone", value: senderPhoneNumber, inline: true }
-        ]
-      })
-    } catch (e) { }
 
     return NextResponse.json({ success: true, receiptImageUrl })
   } catch (error: any) {
