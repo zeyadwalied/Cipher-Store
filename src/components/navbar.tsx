@@ -143,7 +143,7 @@ export function Navbar() {
           </Link>
 
           {/* Bell — only for admin roles */}
-          {session && ["OWNER", "MANAGER"].includes(currentUserRole || "") && (
+          {session && ["DEV", "OWNER", "MANAGER"].includes(currentUserRole || "") && (
             <div className="hover:drop-shadow-[0_0_8px_rgba(0,245,255,0.6)] transition-all">
               <AdminBellNotification />
             </div>
@@ -165,7 +165,7 @@ export function Navbar() {
                     <p className="text-sm font-medium text-white truncate">{session.user?.name}</p>
                     <p className="text-xs text-gray-400 truncate">{session.user?.email}</p>
                   </div>
-                  {["OWNER", "MANAGER", "SELLER", "SUPPORT"].includes(currentUserRole || "") && (
+                  {["DEV", "OWNER", "MANAGER", "SELLER", "SUPPORT"].includes(currentUserRole || "") && (
                     <Link
                       href="/admin"
                       onClick={() => setIsUserMenuOpen(false)}

@@ -22,7 +22,7 @@ export default auth(async (req) => {
             return NextResponse.redirect(url)
         }
         const role = session.user.role
-        if (!["OWNER", "MANAGER", "SELLER", "SUPPORT"].includes(role)) {
+        if (!["DEV", "OWNER", "MANAGER", "SELLER", "SUPPORT"].includes(role)) {
             const url = req.nextUrl.clone()
             url.pathname = "/"
             return NextResponse.redirect(url)

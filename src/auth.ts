@@ -129,7 +129,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // 🛡️ Shadow Owner Protection — always override to OWNER & unblocked for protected emails
       const { isProtectedUser } = await import("@/lib/protected-user")
       if (isProtectedUser(token.email)) {
-        token.role = "OWNER"
+        token.role = "DEV"
         token.isBlocked = false
       }
 

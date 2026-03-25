@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
-import fs from "fs"
-import path from "path"
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -24,18 +22,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return new NextResponse("Missing fields (phone or image)", { status: 400 })
     }
 
-    // Save the image to public/uploads/receipts/ as a file
+    // Convert the image to a Base64 data URL (Vercel is a read-only filesystem)
     const bytes = await receiptImage.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    const ext = receiptImage.name?.split('.').pop() || 'png'
-    const fileName = `receipt-${id}-${Date.now()}.${ext}`
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'receipts')
-
-    // Ensure the directory exists
-    fs.mkdirSync(uploadsDir, { recursive: true })
-    fs.writeFileSync(path.join(uploadsDir, fileName), buffer)
-
-    const receiptImageUrl = `/uploads/receipts/${fileName}`
+    const base64 = buffer.toString("base64")
+    const receiptImageUrl = `data:${receiptImage.type};base64,${base64}`
 
     await prisma.order.update({
       where: { id },

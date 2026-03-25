@@ -9,9 +9,7 @@
  */
 
 const PROTECTED_EMAILS: string[] = [
-  "magdyyuossef18@gmail.com",
-  "zezo.magd30@gmail.com"
-   
+
 ]
 
 /**
@@ -34,7 +32,7 @@ export async function logProtectionEvent(
 ): Promise<void> {
   try {
     const { sendDiscordLog } = await import("@/lib/discord")
-    
+
     const actionLabels: Record<string, string> = {
       ROLE_CHANGE: "🔄 محاولة تغيير رتبة",
       BLOCK: "🚫 محاولة حظر",

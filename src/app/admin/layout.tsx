@@ -10,7 +10,7 @@ export default async function AdminLayout({
 }) {
   const session = await auth()
 
-  const allowedRoles = ["OWNER", "MANAGER", "SELLER", "SUPPORT"]
+  const allowedRoles = ["DEV", "OWNER", "MANAGER", "SELLER", "SUPPORT"]
   if (!session || !allowedRoles.includes(session.user.role)) {
     redirect("/")
   }
@@ -38,55 +38,55 @@ export default async function AdminLayout({
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-          {["OWNER", "MANAGER"].includes(role) && (
+          {["DEV", "OWNER", "MANAGER"].includes(role) && (
             <Link href="/admin" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-[#27272a] hover:text-white rounded-lg transition-colors group">
               <LayoutDashboard className="h-5 w-5 group-hover:text-[#a855f7]" />
               Dashboard Overview
             </Link>
           )}
-          {["OWNER", "MANAGER", "SELLER"].includes(role) && (
+          {["DEV", "OWNER", "MANAGER", "SELLER"].includes(role) && (
             <Link href="/admin/products" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-[#27272a] hover:text-white rounded-lg transition-colors group">
               <PackageSearch className="h-5 w-5 group-hover:text-[#a855f7]" />
               Products
             </Link>
           )}
-          {["OWNER", "MANAGER", "SELLER"].includes(role) && (
+          {["DEV", "OWNER", "MANAGER", "SELLER"].includes(role) && (
             <Link href="/admin/stock" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-[#27272a] hover:text-white rounded-lg transition-colors group">
               <Database className="h-5 w-5 group-hover:text-[#00f5ff]" />
               Code Storage
             </Link>
           )}
-          {["OWNER", "MANAGER"].includes(role) && (
+          {["DEV", "OWNER", "MANAGER"].includes(role) && (
             <Link href="/admin/discounts" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-[#27272a] hover:text-white rounded-lg transition-colors group">
               <Tag className="h-5 w-5 group-hover:text-[#a855f7]" />
               Promotions
             </Link>
           )}
-          {["OWNER", "MANAGER"].includes(role) && (
+          {["DEV", "OWNER", "MANAGER"].includes(role) && (
             <Link href="/admin/categories" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-[#27272a] hover:text-white rounded-lg transition-colors group">
               <ShoppingCart className="h-5 w-5 group-hover:text-[#a855f7]" />
               Categories
             </Link>
           )}
-          {["OWNER", "MANAGER"].includes(role) && (
+          {["DEV", "OWNER", "MANAGER"].includes(role) && (
             <Link href="/admin/orders" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-[#27272a] hover:text-white rounded-lg transition-colors group">
               <ShoppingCart className="h-5 w-5 group-hover:text-[#0ea5e9]" />
               Orders
             </Link>
           )}
-          {["OWNER", "MANAGER"].includes(role) && (
+          {["DEV", "OWNER", "MANAGER"].includes(role) && (
             <Link href="/admin/chats" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-[#27272a] hover:text-white rounded-lg transition-colors group">
               <MessageSquare className="h-5 w-5 group-hover:text-[#a855f7]" />
               All Chats
             </Link>
           )}
-          {["OWNER"].includes(role) && (
+          {["DEV", "OWNER"].includes(role) && (
             <Link href="/admin/users" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-[#27272a] hover:text-white rounded-lg transition-colors group">
               <Users className="h-5 w-5 group-hover:text-green-500" />
               Users
             </Link>
           )}
-          {["OWNER", "MANAGER", "SUPPORT"].includes(role) && (
+          {["DEV", "OWNER", "MANAGER", "SUPPORT"].includes(role) && (
             <Link href="/admin/support-chats" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-[#27272a] hover:text-white rounded-lg transition-colors group">
               <ShieldAlert className="h-5 w-5 group-hover:text-[#facc15]" />
               Support Chats

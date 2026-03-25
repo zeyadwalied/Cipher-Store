@@ -14,7 +14,7 @@ model User {
   emailVerified DateTime?
   password      String?
   image         String?
-  role          String    @default("USER") // 'USER', 'SUPPORT', 'SELLER', 'MANAGER', 'OWNER'
+  role          String    @default("USER") // 'USER', 'SUPPORT', 'SELLER', 'MANAGER', 'OWNER', 'DEV'
   isBlocked     Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
