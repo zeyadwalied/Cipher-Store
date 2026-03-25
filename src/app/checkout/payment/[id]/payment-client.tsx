@@ -76,7 +76,7 @@ export default function PaymentClient({ order }: { order: any }) {
   const method = order.paymentMethod?.toLowerCase() || 'vodafone'
   let paymentDetails = {
     title: "VODAFONE CASH",
-    value: "01012345678",
+    value: "01094515731",
     isLink: false,
     logo: <img src="/vodafone-logo.png" alt="Vodafone" className="h-30 w-auto object-contain drop-shadow-[0_0_15px_rgba(230,0,0,0.4)]" />,
     color: "#E60000"
