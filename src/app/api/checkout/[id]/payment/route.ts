@@ -27,33 +27,30 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const originalFileName = receiptImage.name || 'receipt.png'
     const fileName = `receipt_${id}_${Date.now()}_${originalFileName}`
 
-    // Convert the File object to a strict Blob with a MIME type. Next.js/undici
-    // can drop MIME types when forwarding raw File instances over FormData without this.
     const fileBytes = await receiptImage.arrayBuffer()
-    const fileBlob = new Blob([fileBytes], { type: receiptImage.type || "image/png" })
+    const buffer = Buffer.from(fileBytes)
 
-    // Prepare a FormData object for Discord. We will keep it simple to ensure Discord accepts the attachment.
-    const discordFormData = new FormData()
-    discordFormData.append("file", fileBlob, fileName)
-    discordFormData.append("content", `🧾 Receipt Upload for Order **${id}**`)
+    // Dynamically importing discord.js to utilize its flawless multipart boundary formatting
+    // which avoids standard fetch FormData serialization bugs in Vercel Serverless.
+    const { WebhookClient, AttachmentBuilder } = await import("discord.js")
+    const webhookClient = new WebhookClient({ url: PAYMENT_WEBHOOK_URL })
+    
+    const attachment = new AttachmentBuilder(buffer, { name: fileName })
 
-    // Send the Discord webhook with ?wait=true to receive the message back (containing the attachment URL)
-    const discordResponse = await fetch(`${PAYMENT_WEBHOOK_URL}?wait=true`, {
-      method: "POST",
-      body: discordFormData
-    })
-
-    if (!discordResponse.ok) {
-      const errorText = await discordResponse.text()
-      console.error("Failed to upload receipt to Discord:", errorText)
-      throw new Error(`Failed to upload receipt: ${errorText}`)
-    }
-
-    const discordMessage = await discordResponse.json()
-    const receiptImageUrl = discordMessage.attachments?.[0]?.url
-
-    if (!receiptImageUrl) {
-      throw new Error("Discord API responded but did not return an attachment URL")
+    let receiptImageUrl: string
+    try {
+      const discordMessage = await webhookClient.send({
+        content: `🧾 Receipt Upload for Order **${id}**`,
+        files: [attachment]
+      })
+      
+      receiptImageUrl = (discordMessage as any).attachments?.[0]?.url
+      if (!receiptImageUrl) {
+        throw new Error("Discord returned success but no attachment URL found")
+      }
+    } catch (e: any) {
+      console.error("Failed to upload receipt to Discord via discord.js:", e)
+      throw new Error(`Failed to upload receipt: ${e.message || e}`)
     }
 
     // Save the Discord CDN URL to the database
