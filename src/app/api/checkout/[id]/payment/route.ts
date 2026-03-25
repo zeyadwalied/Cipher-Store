@@ -24,12 +24,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return new NextResponse("Missing fields (phone or image)", { status: 400 })
     }
 
-    // Prepare a FormData object for Discord. We will keep it simple to ensure Discord accepts the attachment.
-    const discordFormData = new FormData()
     const originalFileName = receiptImage.name || 'receipt.png'
     const fileName = `receipt_${id}_${Date.now()}_${originalFileName}`
-    
-    discordFormData.append("file", receiptImage, fileName)
+
+    // Convert the File object to a strict Blob with a MIME type. Next.js/undici
+    // can drop MIME types when forwarding raw File instances over FormData without this.
+    const fileBytes = await receiptImage.arrayBuffer()
+    const fileBlob = new Blob([fileBytes], { type: receiptImage.type || "image/png" })
+
+    // Prepare a FormData object for Discord. We will keep it simple to ensure Discord accepts the attachment.
+    const discordFormData = new FormData()
+    discordFormData.append("file", fileBlob, fileName)
     discordFormData.append("content", `🧾 Receipt Upload for Order **${id}**`)
 
     // Send the Discord webhook with ?wait=true to receive the message back (containing the attachment URL)
