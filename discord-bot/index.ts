@@ -1,10 +1,8 @@
 import { Client, GatewayIntentBits, Partials, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, CategoryChannel, TextChannel, Message, AttachmentBuilder } from 'discord.js';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../src/lib/prisma';
 import fs from 'fs';
 import path from 'path';
 import "dotenv/config";
-
-const prisma = new PrismaClient();
 
 const client = new Client({
   intents: [
