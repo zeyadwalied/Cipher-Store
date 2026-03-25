@@ -206,40 +206,67 @@ export function Navbar() {
             </Link>
           )}
 
-          {/* Mobile Menu Toggle */}
+          {/* Mobile Menu Toggle — Cyberpunk Styled */}
           <button
-            className="md:hidden text-gray-300 hover:text-white"
+            className={`md:hidden relative p-2 rounded-lg border transition-all duration-300 ${isMobileMenuOpen
+                ? 'border-[#00f5ff] bg-[#00f5ff]/10 text-[#00f5ff] shadow-[0_0_15px_rgba(0,245,255,0.3)]'
+                : 'border-[#27272a] text-gray-400 hover:text-[#00f5ff] hover:border-[#00f5ff]/40 hover:shadow-[0_0_10px_rgba(0,245,255,0.15)]'
+              }`}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            <Menu className="h-6 w-6" />
+            <div className="flex flex-col items-center justify-center w-5 h-5 gap-[5px]">
+              <span className={`block h-[2px] w-5 rounded-full bg-current transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-[7px]' : ''}`} />
+              <span className={`block h-[2px] w-5 rounded-full bg-current transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0 scale-0' : ''}`} />
+              <span className={`block h-[2px] w-5 rounded-full bg-current transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-[7px]' : ''}`} />
+            </div>
           </button>
         </div>
       </div>
 
-      {/* Mobile Nav */}
+      {/* Mobile Nav — Cyberpunk Theme */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-[#27272a] bg-[#141417] px-4 py-4">
-          <div className="flex flex-col gap-1">
+        <div className="md:hidden border-t border-[#00f5ff]/20 bg-[#0a0a0f]/95 backdrop-blur-xl relative overflow-hidden">
+          {/* Cyber Scanlines */}
+          <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(transparent 50%, rgba(0,245,255,0.1) 50%)', backgroundSize: '100% 4px' }} />
+          {/* Corner Accents */}
+          <div className="absolute top-2 left-2 w-4 h-4 border-t border-l border-[#00f5ff]/40" />
+          <div className="absolute top-2 right-2 w-4 h-4 border-t border-r border-[#a855f7]/40" />
+          <div className="absolute bottom-2 left-2 w-4 h-4 border-b border-l border-[#a855f7]/40" />
+          <div className="absolute bottom-2 right-2 w-4 h-4 border-b border-r border-[#00f5ff]/40" />
+
+          <div className="px-4 py-4 space-y-1 relative z-10">
+            {/* Header line */}
+            <div className="flex items-center gap-2 mb-3 px-2">
+              <div className="h-[2px] flex-1 bg-gradient-to-r from-[#00f5ff]/50 to-transparent" />
+              <span className="text-[9px] font-mono uppercase tracking-[0.3em] text-[#00f5ff]/60">CATEGORIES</span>
+              <div className="h-[2px] flex-1 bg-gradient-to-l from-[#a855f7]/50 to-transparent" />
+            </div>
+
             {mainCategories.map((cat) => (
               <div key={cat.id}>
                 <Link
                   href={`/category/${cat.slug || cat.id}`}
-                  className="flex items-center gap-3 py-3 px-3 rounded-lg text-sm font-bold text-white hover:bg-[#27272a]/50 transition-colors"
+                  className="flex items-center gap-3 py-3 px-4 rounded-xl text-sm font-bold text-white/90 hover:text-[#00f5ff] hover:bg-[#00f5ff]/5 border border-transparent hover:border-[#00f5ff]/20 transition-all duration-300 group"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {cat.imageUrl && (
-                    <img src={cat.imageUrl} alt="" className="h-7 w-7 rounded-lg object-cover border border-[#00f5ff]/20" />
+                  {cat.imageUrl ? (
+                    <img src={cat.imageUrl} alt="" className="h-8 w-8 rounded-lg object-cover border border-[#00f5ff]/20 group-hover:border-[#00f5ff]/50 group-hover:shadow-[0_0_10px_rgba(0,245,255,0.2)] transition-all" />
+                  ) : (
+                    <div className="h-8 w-8 rounded-lg bg-[#141417] border border-[#27272a] flex items-center justify-center">
+                      <Gamepad2 className="h-4 w-4 text-gray-600" />
+                    </div>
                   )}
-                  {cat.name}
+                  <span className="flex-1">{cat.name}</span>
+                  <span className="text-[10px] text-[#00f5ff]/30 font-mono group-hover:text-[#00f5ff]/60 transition-colors">▸</span>
                 </Link>
                 {/* Subcategories */}
                 {cat.children && cat.children.length > 0 && (
-                  <div className="mr-6 border-r border-[#27272a] pr-3 mb-2">
+                  <div className="mr-8 border-r border-[#00f5ff]/10 pr-3 mb-1 space-y-0.5">
                     {cat.children.map(sub => (
                       <Link
                         key={sub.id}
                         href={`/category/${sub.id}`}
-                        className="flex items-center gap-2 py-2 px-3 text-xs text-gray-400 hover:text-[#00f5ff] transition-colors"
+                        className="flex items-center gap-2 py-2 px-3 rounded-lg text-xs text-gray-500 hover:text-[#a855f7] hover:bg-[#a855f7]/5 transition-all duration-200"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         {sub.imageUrl ? (
@@ -247,13 +274,16 @@ export function Navbar() {
                         ) : (
                           <div className="h-5 w-5 rounded bg-[#09090b] border border-[#27272a]" />
                         )}
-                        {sub.name}
+                        <span className="font-mono tracking-wide">{sub.name}</span>
                       </Link>
                     ))}
                   </div>
                 )}
               </div>
             ))}
+
+            {/* Bottom accent */}
+            <div className="h-[1px] mt-3 bg-gradient-to-r from-transparent via-[#00f5ff]/30 to-transparent" />
           </div>
         </div>
       )}
