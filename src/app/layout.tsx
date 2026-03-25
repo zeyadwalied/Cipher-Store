@@ -20,6 +20,7 @@ import SessionSync from "@/components/session-sync";
 import { HydrationDetector } from "@/components/HydrationDetector";
 import NextTopLoader from 'nextjs-toploader';
 import { auth } from "@/auth";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   // ... existing metadata ...
@@ -163,6 +164,7 @@ export default async function RootLayout({
         `}} />
 
         <Providers>
+          <SpeedInsights />
           <HydrationDetector />
           <SessionSync />
           <Navbar />
