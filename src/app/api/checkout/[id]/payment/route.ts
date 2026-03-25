@@ -24,39 +24,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return new NextResponse("Missing fields (phone or image)", { status: 400 })
     }
 
-    // Prepare a FormData object for Discord
+    // Prepare a FormData object for Discord. We will keep it simple to ensure Discord accepts the attachment.
     const discordFormData = new FormData()
     const originalFileName = receiptImage.name || 'receipt.png'
     const fileName = `receipt_${id}_${Date.now()}_${originalFileName}`
     
-    // Discord requires files[0], files[1], etc.
-    discordFormData.append("files[0]", receiptImage, fileName)
-
-    const embedPayload = {
-      // Must include attachments array to link the file properly
-      attachments: [
-        {
-          id: 0,
-          filename: fileName
-        }
-      ],
-      embeds: [
-        {
-          title: "💳 Payment Proof Uploaded",
-          color: 0x00ff00, // Green
-          fields: [
-            { name: "Order ID", value: id, inline: true },
-            { name: "Customer", value: session.user?.email || "Unknown", inline: true },
-            { name: "Phone", value: senderPhoneNumber, inline: true }
-          ],
-          image: {
-            url: `attachment://${fileName}`
-          }
-        }
-      ]
-    }
-
-    discordFormData.append("payload_json", JSON.stringify(embedPayload))
+    discordFormData.append("file", receiptImage, fileName)
+    discordFormData.append("content", `🧾 Receipt Upload for Order **${id}**`)
 
     // Send the Discord webhook with ?wait=true to receive the message back (containing the attachment URL)
     const discordResponse = await fetch(`${PAYMENT_WEBHOOK_URL}?wait=true`, {
@@ -71,7 +45,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     const discordMessage = await discordResponse.json()
-    const receiptImageUrl = discordMessage.attachments[0]?.url
+    const receiptImageUrl = discordMessage.attachments?.[0]?.url
 
     if (!receiptImageUrl) {
       throw new Error("Discord API responded but did not return an attachment URL")
@@ -82,6 +56,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       where: { id },
       data: { senderPhoneNumber, receiptImageUrl } as any
     })
+
+    // Log the event to Discord using the standard logger
+    try {
+      const { sendDiscordLog } = await import("@/lib/discord");
+      await sendDiscordLog("payments", {
+        title: "💳 Payment Proof Uploaded",
+        color: 0x00ff00, // Green
+        fields: [
+          { name: "Order ID", value: id, inline: true },
+          { name: "Customer", value: session.user?.email || "Unknown", inline: true },
+          { name: "Phone", value: senderPhoneNumber, inline: true }
+        ],
+        image: {
+          url: receiptImageUrl
+        }
+      })
+    } catch (e) { }
 
     return NextResponse.json({ success: true, receiptImageUrl })
   } catch (error: any) {
