@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Upload, CheckCircle, ArrowRight, ShieldAlert, Copy, ExternalLink, Loader2 } from "lucide-react"
-
-
+import { useCartStore } from "@/lib/store"
 
 export default function PaymentClient({ order }: { order: any }) {
   const router = useRouter()
+  const { clearCart } = useCartStore()
   const [phone, setPhone] = useState("")
   const [file, setFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -48,6 +48,7 @@ export default function PaymentClient({ order }: { order: any }) {
       })
 
       if (res.ok) {
+        clearCart()
         router.push(`/order-confirmation/${order.id}`)
       } else {
         const errText = await res.text()

@@ -24,18 +24,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return new NextResponse("Missing fields (phone or image)", { status: 400 })
     }
 
-    // Read the file as a buffer
-    const bytes = await receiptImage.arrayBuffer()
-    const fileBuffer = Buffer.from(bytes)
-
     // Prepare a FormData object for Discord
     const discordFormData = new FormData()
     const originalFileName = receiptImage.name || 'receipt.png'
     const fileName = `receipt_${id}_${Date.now()}_${originalFileName}`
-
-    discordFormData.append("file", new Blob([fileBuffer]), fileName)
+    
+    // Discord requires files[0], files[1], etc.
+    discordFormData.append("files[0]", receiptImage, fileName)
 
     const embedPayload = {
+      // Must include attachments array to link the file properly
+      attachments: [
+        {
+          id: 0,
+          filename: fileName
+        }
+      ],
       embeds: [
         {
           title: "💳 Payment Proof Uploaded",
@@ -63,14 +67,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!discordResponse.ok) {
       const errorText = await discordResponse.text()
       console.error("Failed to upload receipt to Discord:", errorText)
-      throw new Error("Failed to upload receipt")
+      throw new Error(`Failed to upload receipt: ${errorText}`)
     }
 
     const discordMessage = await discordResponse.json()
     const receiptImageUrl = discordMessage.attachments[0]?.url
 
     if (!receiptImageUrl) {
-      throw new Error("Discord did not return an attachment URL")
+      throw new Error("Discord API responded but did not return an attachment URL")
     }
 
     // Save the Discord CDN URL to the database
