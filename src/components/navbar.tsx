@@ -200,7 +200,7 @@ export function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="rounded-lg bg-[#a855f7] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#9333ea]"
+              className="rounded-lg bg-[#a855f7] px-2.5 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-semibold text-white transition-all hover:bg-[#9333ea]"
             >
               تسجيل الدخول
             </Link>

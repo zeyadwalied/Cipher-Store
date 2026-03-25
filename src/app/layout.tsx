@@ -22,7 +22,31 @@ import NextTopLoader from 'nextjs-toploader';
 import { auth } from "@/auth";
 
 export const metadata: Metadata = {
-  // ... existing metadata ...
+  title: "Cipher Store | متجر سايفر",
+  description: "متجر الألعاب والبطاقات الرقمية الأول - اشترِ ألعابك المفضلة وبطاقات الشحن بأفضل الأسعار",
+  metadataBase: new URL("https://cipherstore.online"),
+  openGraph: {
+    title: "Cipher Store | متجر سايفر",
+    description: "متجر الألعاب والبطاقات الرقمية الأول - اشترِ ألعابك المفضلة وبطاقات الشحن بأفضل الأسعار",
+    url: "https://cipherstore.online",
+    siteName: "Cipher Store",
+    images: [
+      {
+        url: "/main-logo.png",
+        width: 512,
+        height: 512,
+        alt: "Cipher Store Logo",
+      },
+    ],
+    locale: "ar_EG",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cipher Store | متجر سايفر",
+    description: "متجر الألعاب والبطاقات الرقمية الأول",
+    images: ["/main-logo.png"],
+  },
 }
 
 export default async function RootLayout({
