@@ -98,6 +98,12 @@ export default async function RootLayout({
             var loader = document.getElementById('cyber-loader');
             if (!loader) return;
 
+            // Only show loader on the exact homepage
+            if (window.location.pathname !== "/") {
+              loader.style.display = 'none';
+              return;
+            }
+
             // If already shown this session, hide immediately
             if (sessionStorage.getItem('cipher_loader_shown')) {
               loader.style.display = 'none';
