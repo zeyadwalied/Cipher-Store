@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ShoppingCart, Menu, Search, User, LogOut, Package, Gamepad2, MessageSquare } from "lucide-react"
+import { ShoppingCart, Menu, Search, User, LogOut, Package, Gamepad2, MessageSquare, Loader2 } from "lucide-react"
 import { useSession, signOut } from "next-auth/react"
 import { useCartStore } from "@/lib/store"
 import { useState, useEffect, useRef } from "react"
@@ -21,6 +21,7 @@ export function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [categories, setCategories] = useState<{ id: string, name: string, slug?: string | null, imageUrl?: string | null, parentId: string | null, children?: { id: string, name: string, slug?: string | null, imageUrl?: string | null }[] }[]>([])
   const [isMounted, setIsMounted] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
   const hasSyncedFromDB = useRef(false)
 
@@ -188,11 +189,19 @@ export function Navbar() {
                     الإعدادات
                   </Link>
                   <button
-                    onClick={() => { setIsUserMenuOpen(false); signOut(); }}
-                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10"
+                    onClick={() => {
+                      setIsLoggingOut(true)
+                      signOut({ callbackUrl: '/' })
+                    }}
+                    disabled={isLoggingOut}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 disabled:opacity-50 transition-opacity"
                   >
-                    <LogOut className="h-4 w-4 ml-2" />
-                    تسجيل الخروج
+                    {isLoggingOut ? (
+                      <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                    ) : (
+                      <LogOut className="h-4 w-4 ml-2" />
+                    )}
+                    {isLoggingOut ? "جاري الخروج..." : "تسجيل الخروج"}
                   </button>
                 </div>
               )}
