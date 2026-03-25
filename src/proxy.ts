@@ -1,5 +1,5 @@
-import { auth } from "@/auth"
 import { NextResponse } from "next/server"
+import { auth } from "@/auth"
 
 export default auth(async (req) => {
     const session = req.auth

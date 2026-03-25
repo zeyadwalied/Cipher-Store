@@ -23,7 +23,31 @@ import { auth } from "@/auth";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
-  // ... existing metadata ...
+  title: "Cipher Store | متجر سايفر",
+  description: "متجر الألعاب والبطاقات الرقمية الأول - اشترِ ألعابك المفضلة وبطاقات الشحن بأفضل الأسعار",
+  metadataBase: new URL("https://cipherstore.online"),
+  openGraph: {
+    title: "Cipher Store | متجر سايفر",
+    description: "متجر الألعاب والبطاقات الرقمية الأول - اشترِ ألعابك المفضلة وبطاقات الشحن بأفضل الأسعار",
+    url: "https://cipherstore.online",
+    siteName: "Cipher Store",
+    images: [
+      {
+        url: "/main-logo.png",
+        width: 512,
+        height: 512,
+        alt: "Cipher Store Logo",
+      },
+    ],
+    locale: "ar_EG",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cipher Store | متجر سايفر",
+    description: "متجر الألعاب والبطاقات الرقمية الأول",
+    images: ["/main-logo.png"],
+  },
 }
 
 export default async function RootLayout({
@@ -61,7 +85,7 @@ export default async function RootLayout({
           suppressHydrationWarning
           style={{
             position: 'fixed', inset: 0, zIndex: '99999',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            display: 'none', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             background: '#010205', transition: 'opacity 0.6s ease',
           }}
         >
@@ -98,6 +122,14 @@ export default async function RootLayout({
           (function(){
             var loader = document.getElementById('cyber-loader');
             if (!loader) return;
+
+            // Only show loader on the exact homepage
+            if (window.location.pathname !== "/") {
+              return;
+            }
+
+            // Show the loader (it starts hidden by default)
+            loader.style.display = 'flex';
 
             // If already shown this session, hide immediately
             if (sessionStorage.getItem('cipher_loader_shown')) {

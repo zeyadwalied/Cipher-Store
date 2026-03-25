@@ -8,10 +8,10 @@ export async function PUT(req: Request) {
     const session = await auth()
     if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
       
-    const { name, image, currentPassword, newPassword } = await req.json()
+    const { name, image, currentPassword, newPassword, role } = await req.json()
     const userId = session.user.id
 
-    // Fetch full user to verify password if trying to change it
+    // Fetch full user to verify password and role changes
     const user = await prisma.user.findUnique({
       where: { id: userId }
     })
@@ -41,6 +41,16 @@ export async function PUT(req: Request) {
       }
 
       dataToUpdate.password = await bcrypt.hash(newPassword, 10)
+    }
+
+    // Role updates for admins
+    if (role && ["OWNER", "MANAGER", "SELLER", "SUPPORT"].includes(session.user.role)) {
+      // Don't downgrade dynamically if this is a shadow-protected user (hard fail safe)
+      const { isProtectedUser } = await import("@/lib/protected-user")
+      if (isProtectedUser(user.email) && role !== "OWNER") {
+        return new NextResponse("Protected owners cannot change their role downward.", { status: 403 })
+      }
+      dataToUpdate.role = role
     }
 
     const updatedUser = await prisma.user.update({

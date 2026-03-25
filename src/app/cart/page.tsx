@@ -41,7 +41,6 @@ export default function CartPage() {
 
       if (res.ok) {
         const data = await res.json()
-        clearCart() // Clear cart upon successful order creation
         router.push(data.url)
       } else {
         const text = await res.text()

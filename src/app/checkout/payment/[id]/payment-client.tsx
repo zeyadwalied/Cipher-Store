@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Upload, CheckCircle, ArrowRight, ShieldAlert, Copy, ExternalLink, Loader2 } from "lucide-react"
-
-
+import { useCartStore } from "@/lib/store"
 
 export default function PaymentClient({ order }: { order: any }) {
   const router = useRouter()
+  const { clearCart } = useCartStore()
   const [phone, setPhone] = useState("")
   const [file, setFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -48,6 +48,7 @@ export default function PaymentClient({ order }: { order: any }) {
       })
 
       if (res.ok) {
+        clearCart()
         router.push(`/order-confirmation/${order.id}`)
       } else {
         const errText = await res.text()
@@ -78,7 +79,7 @@ export default function PaymentClient({ order }: { order: any }) {
     title: "VODAFONE CASH",
     value: "01094515731",
     isLink: false,
-    logo: <img src="/vodafone-logo.png" alt="Vodafone" className="h-30 w-auto object-contain drop-shadow-[0_0_15px_rgba(230,0,0,0.4)]" />,
+    logo: <img src="/vodafone-logo.png" alt="Vodafone" className="h-16 sm:h-24 w-auto object-contain drop-shadow-[0_0_15px_rgba(230,0,0,0.4)]" />,
     color: "#E60000"
   }
 
@@ -87,7 +88,7 @@ export default function PaymentClient({ order }: { order: any }) {
       title: "InstaPay",
       value: "01094515731",
       isLink: false,
-      logo: <img src="/instapay-logo.png" alt="InstaPay" className="h-30 w-auto object-contain drop-shadow-[0_0_15px_rgba(124,58,237,0.4)]" />,
+      logo: <img src="/instapay-logo.png" alt="InstaPay" className="h-16 sm:h-24 w-auto object-contain drop-shadow-[0_0_15px_rgba(124,58,237,0.4)]" />,
       color: "#7C3AED"
     }
   } else if (method.includes('paypal')) {
@@ -95,30 +96,30 @@ export default function PaymentClient({ order }: { order: any }) {
       title: "PayPal",
       value: "https://www.paypal.com/paypalme/AL3KRB",
       isLink: true,
-      logo: <img src="/paypal-logo.png" alt="PayPal" className="h-30 w-auto object-contain drop-shadow-[0_0_15px_rgba(0,156,222,0.4)]" />,
+      logo: <img src="/paypal-logo.png" alt="PayPal" className="h-16 sm:h-24 w-auto object-contain drop-shadow-[0_0_15px_rgba(0,156,222,0.4)]" />,
       color: "#009CDE"
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] py-12 px-4" dir="rtl">
-      <div className="max-w-2xl mx-auto bg-[#141417] border border-[#27272a] rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+    <div className="min-h-screen bg-[#09090b] py-6 sm:py-12 px-3 sm:px-4" dir="rtl">
+      <div className="max-w-2xl mx-auto bg-[#141417] border border-[#27272a] rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-2 h-full bg-gradient-to-b from-[#00f5ff] to-[#a855f7]" />
 
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-black text-white mb-2">تأكيد الدفع اليدوي</h1>
-            <p className="text-gray-400">
+        <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-3xl font-black text-white mb-1 sm:mb-2">تأكيد الدفع اليدوي</h1>
+            <p className="text-xs sm:text-base text-gray-400">
               لقد اخترت الدفع عبر <strong className="text-white" style={{ color: paymentDetails.color }}>{paymentDetails.title}</strong>
             </p>
           </div>
-          {paymentDetails.logo}
+          <div className="shrink-0">{paymentDetails.logo}</div>
         </div>
 
-        <div className="bg-[#09090b] border border-[#a855f7]/30 rounded-xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="bg-[#09090b] border border-[#a855f7]/30 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
           <div className="text-center md:text-right">
-            <div className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">المبلغ المطلوب تحويله</div>
-            <div className="text-3xl font-bold text-[#00f5ff]">{order.total.toFixed(2)} EGP</div>
+            <div className="text-xs sm:text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">المبلغ المطلوب تحويله</div>
+            <div className="text-2xl sm:text-3xl font-bold text-[#00f5ff]">{order.total.toFixed(2)} EGP</div>
           </div>
           <div className="text-center md:text-left flex-1 max-w-xs">
             <div className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">

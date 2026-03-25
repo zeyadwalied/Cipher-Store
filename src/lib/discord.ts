@@ -28,6 +28,7 @@ interface Embed {
   description?: string;
   color?: number; // Integer color code
   fields?: { name: string; value: string; inline?: boolean }[];
+  image?: { url: string };
   timestamp?: string;
 }
 
