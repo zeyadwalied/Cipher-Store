@@ -84,7 +84,7 @@ export default async function RootLayout({
           suppressHydrationWarning
           style={{
             position: 'fixed', inset: 0, zIndex: '99999',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            display: 'none', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             background: '#010205', transition: 'opacity 0.6s ease',
           }}
         >
@@ -124,9 +124,11 @@ export default async function RootLayout({
 
             // Only show loader on the exact homepage
             if (window.location.pathname !== "/") {
-              loader.style.display = 'none';
               return;
             }
+
+            // Show the loader (it starts hidden by default)
+            loader.style.display = 'flex';
 
             // If already shown this session, hide immediately
             if (sessionStorage.getItem('cipher_loader_shown')) {
