@@ -28,28 +28,33 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const fileName = `receipt_${id}_${Date.now()}_${originalFileName}`
 
     const fileBytes = await receiptImage.arrayBuffer()
-    const buffer = Buffer.from(fileBytes)
+    const fileBlob = new Blob([fileBytes], { type: receiptImage.type || "image/png" })
 
-    // Dynamically importing discord.js to utilize its flawless multipart boundary formatting
-    // which avoids standard fetch FormData serialization bugs in Vercel Serverless.
-    const { WebhookClient, AttachmentBuilder } = await import("discord.js")
-    const webhookClient = new WebhookClient({ url: PAYMENT_WEBHOOK_URL })
-    
-    const attachment = new AttachmentBuilder(buffer, { name: fileName })
+    // Prepare a FormData object for Discord. We will keep it simple to ensure Discord accepts the attachment.
+    const discordFormData = new FormData()
+    discordFormData.append("file", fileBlob, fileName)
+    discordFormData.append("content", `🧾 Receipt Upload for Order **${id}**`)
 
     let receiptImageUrl: string
     try {
-      const discordMessage = await webhookClient.send({
-        content: `🧾 Receipt Upload for Order **${id}**`,
-        files: [attachment]
+      const discordResponse = await fetch(`${PAYMENT_WEBHOOK_URL}?wait=true`, {
+        method: "POST",
+        body: discordFormData
       })
+
+      if (!discordResponse.ok) {
+        const errorText = await discordResponse.text()
+        throw new Error(`Status ${discordResponse.status}: ${errorText}`)
+      }
+
+      const discordMessage = await discordResponse.json()
+      receiptImageUrl = discordMessage.attachments?.[0]?.url
       
-      receiptImageUrl = (discordMessage as any).attachments?.[0]?.url
       if (!receiptImageUrl) {
         throw new Error("Discord returned success but no attachment URL found")
       }
     } catch (e: any) {
-      console.error("Failed to upload receipt to Discord via discord.js:", e)
+      console.error("Failed to upload receipt to Discord via fetch:", e)
       throw new Error(`Failed to upload receipt: ${e.message || e}`)
     }
 
