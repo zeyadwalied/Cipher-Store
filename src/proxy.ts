@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
-import { auth } from "@/auth"
+import type { NextRequest } from "next/server"
+import { getToken } from "next-auth/jwt"
 
-export default auth(async (req) => {
-    const session = req.auth
+export async function middleware(req: NextRequest) {
+    const token = await getToken({ req, secret: process.env.AUTH_SECRET })
     const { pathname } = req.nextUrl
 
     // Block blocked users from all pages except login
-    if (session?.user?.isBlocked && !pathname.startsWith("/login")) {
+    if (token?.isBlocked && !pathname.startsWith("/login")) {
         const url = req.nextUrl.clone()
         url.pathname = "/login"
         url.search = `error=Blocked`
@@ -15,13 +16,13 @@ export default auth(async (req) => {
 
     // Protect /dashboard — require authenticated admin/staff
     if (pathname.startsWith("/dashboard")) {
-        if (!session?.user) {
+        if (!token) {
             const url = req.nextUrl.clone()
             url.pathname = "/login"
             url.search = "error=Unauthorized"
             return NextResponse.redirect(url)
         }
-        const role = session.user.role
+        const role = token.role as string
         if (!["DEV", "OWNER", "MANAGER", "SELLER", "SUPPORT"].includes(role)) {
             const url = req.nextUrl.clone()
             url.pathname = "/"
@@ -31,13 +32,13 @@ export default auth(async (req) => {
 
     // Protect /api/admin — require authenticated users (role check is done in route handlers)
     if (pathname.startsWith("/api/admin")) {
-        if (!session?.user) {
+        if (!token) {
             return new NextResponse("Unauthorized", { status: 401 })
         }
     }
 
     return NextResponse.next()
-})
+}
 
 export const config = {
     matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
