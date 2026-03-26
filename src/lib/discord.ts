@@ -43,13 +43,24 @@ export async function sendDiscordLog(
     // Attach timestamp if not provided
     if (!embed.timestamp) embed.timestamp = new Date().toISOString();
 
-    await fetch(webhookUrl, {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
       body: JSON.stringify({
         embeds: [embed],
       }),
     });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      console.error(`Discord webhook ${type} failed with ${response.status}: ${body}`);
+    }
   } catch (error) {
     console.error(`Failed to send Discord Log (${type}):`, error);
   }

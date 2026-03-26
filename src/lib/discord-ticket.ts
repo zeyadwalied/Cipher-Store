@@ -5,6 +5,7 @@
  */
 
 const DISCORD_API = "https://discord.com/api/v10";
+let cachedCategory: { guildId: string; categoryId: string; expiresAt: number } | null = null;
 
 async function discordAPI(endpoint: string, method: string, body?: any) {
   const token = process.env.DISCORD_TOKEN;
@@ -13,14 +14,20 @@ async function discordAPI(endpoint: string, method: string, body?: any) {
     return null;
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
   const res = await fetch(`${DISCORD_API}${endpoint}`, {
     method,
     headers: {
       Authorization: `Bot ${token}`,
       "Content-Type": "application/json",
     },
+    signal: controller.signal,
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  clearTimeout(timeout);
 
   if (!res.ok) {
     const errText = await res.text();
@@ -32,34 +39,58 @@ async function discordAPI(endpoint: string, method: string, body?: any) {
 }
 
 async function resolveTicketCategoryId(guildId: string, preferredCategoryId?: string | null) {
+  if (
+    cachedCategory &&
+    cachedCategory.guildId === guildId &&
+    cachedCategory.expiresAt > Date.now() &&
+    (!preferredCategoryId || cachedCategory.categoryId === preferredCategoryId)
+  ) {
+    return cachedCategory.categoryId;
+  }
+
   const channels = await discordAPI(`/guilds/${guildId}/channels`, "GET");
   if (!Array.isArray(channels)) {
     const created = await discordAPI(`/guilds/${guildId}/channels`, "POST", {
       name: "Tickets",
       type: 4,
     });
-    return created?.id || preferredCategoryId || null;
+    const categoryId = created?.id || preferredCategoryId || null;
+    if (categoryId) {
+      cachedCategory = { guildId, categoryId, expiresAt: Date.now() + 10 * 60 * 1000 };
+    }
+    return categoryId;
   }
 
   if (preferredCategoryId) {
     const preferred = channels.find((channel: any) =>
       channel?.id === preferredCategoryId && channel?.type === 4
     );
-    if (preferred?.id) return preferred.id;
+    if (preferred?.id) {
+      cachedCategory = { guildId, categoryId: preferred.id, expiresAt: Date.now() + 10 * 60 * 1000 };
+      return preferred.id;
+    }
   }
 
   const fallback = channels.find((channel: any) =>
     channel?.type === 4 && String(channel?.name || "").toLowerCase().includes("ticket")
   );
 
-  if (fallback?.id) return fallback.id;
+  if (fallback?.id) {
+    cachedCategory = { guildId, categoryId: fallback.id, expiresAt: Date.now() + 10 * 60 * 1000 };
+    return fallback.id;
+  }
 
   const created = await discordAPI(`/guilds/${guildId}/channels`, "POST", {
     name: "Tickets",
     type: 4,
   });
 
-  return created?.id || null;
+  if (created?.id) {
+    cachedCategory = { guildId, categoryId: created.id, expiresAt: Date.now() + 10 * 60 * 1000 };
+    return created.id;
+  }
+
+  return null;
 }
 
 interface OrderTicketData {

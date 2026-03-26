@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Partials, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, CategoryChannel, TextChannel, Message, AttachmentBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, Partials, ChannelType, TextChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
 import prisma from '../src/lib/prisma';
 import fs from 'fs';
 import path from 'path';
@@ -16,6 +16,11 @@ const client = new Client({
 
 const TOKEN = process.env.DISCORD_TOKEN || "YOUR_DISCORD_TOKEN_HERE";
 const ENV_TICKET_CATEGORY_ID = process.env.DISCORD_TICKET_CATEGORY_ID || null;
+const FALLBACK_POLL_INTERVAL_MS = 30000;
+const MAX_SUPPORT_TICKETS_PER_PASS = 3;
+const MAX_MESSAGES_PER_PASS = 10;
+const MAX_CLEANUP_ITEMS_PER_PASS = 5;
+const STATE_FLUSH_DEBOUNCE_MS = 1000;
 
 const CONFIG_FILE = path.join(__dirname, 'bot-config.json');
 
@@ -27,6 +32,9 @@ let state = {
   processedOrders: [] as string[],
   processedMessages: [] as string[]
 };
+let stateFlushTimer: NodeJS.Timeout | null = null;
+let pendingPoll = false;
+let ownerIdCache: { value: string | null; expiresAt: number } = { value: null, expiresAt: 0 };
 
 // Load state from file if exists
 try {
@@ -41,14 +49,38 @@ if (!state.ticketCategoryId && ENV_TICKET_CATEGORY_ID) {
   state.ticketCategoryId = ENV_TICKET_CATEGORY_ID;
 }
 
-function saveState() {
+function flushState() {
   // keep sets small
   if (state.processedOrders.length > 300) state.processedOrders = state.processedOrders.slice(-300);
   if (state.processedMessages.length > 1000) state.processedMessages = state.processedMessages.slice(-1000);
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(state));
 }
 
+function saveState() {
+  if (stateFlushTimer) clearTimeout(stateFlushTimer);
+  stateFlushTimer = setTimeout(() => {
+    stateFlushTimer = null;
+    flushState();
+  }, STATE_FLUSH_DEBOUNCE_MS);
+}
+
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+async function getSystemSenderId() {
+  if (ownerIdCache.expiresAt > Date.now()) return ownerIdCache.value;
+
+  const owner = await prisma.user.findFirst({
+    where: { role: { in: ['OWNER', 'DEV', 'MANAGER'] } },
+    select: { id: true }
+  });
+
+  ownerIdCache = {
+    value: owner?.id || null,
+    expiresAt: Date.now() + 5 * 60 * 1000
+  };
+
+  return ownerIdCache.value;
+}
 
 async function resolveTicketCategoryId(guild: any) {
   const preferredIds = [state.ticketCategoryId, ENV_TICKET_CATEGORY_ID].filter(Boolean) as string[];
@@ -90,11 +122,20 @@ async function resolveTicketCategoryId(guild: any) {
   return null;
 }
 
+function requestPoll() {
+  if (isPolling) {
+    pendingPoll = true;
+    return;
+  }
+
+  void pollDatabase();
+}
+
 client.on('ready', async () => {
   console.log(`🤖 Discord Bot Logged in as ${client.user?.tag}!`);
   
   // 1. Keep a backup polling loop just in case a notification drops
-  setInterval(pollDatabase, 15000); // Every 15 seconds as safety net
+  setInterval(requestPoll, FALLBACK_POLL_INTERVAL_MS);
 
   // 2. Postgres LISTEN/NOTIFY -> The Magic!
   // MUST use DIRECT_URL (port 5432) because PgBouncer (port 6543) does NOT support LISTEN/NOTIFY!
@@ -105,8 +146,7 @@ client.on('ready', async () => {
     
     pgClient.on('notification', (msg: any) => {
       if (msg.channel === 'bot_sync') {
-        // Trigger poll instantly when the website says a new item exists!
-        pollDatabase();
+        requestPoll();
       }
     });
 
@@ -115,6 +155,8 @@ client.on('ready', async () => {
   } catch (err) {
     console.error("Failed to setup PG Listen (fallback polling will still run):", err);
   }
+
+  requestPoll();
 });
 
 // COMMANDS & DISCORD->WEB MESSAGE SYNC
@@ -189,11 +231,11 @@ client.on('messageCreate', async (message) => {
     });
 
     if (linkedChat) {
-      const adminUser = await prisma.user.findFirst({ where: { role: 'OWNER' } });
+      const senderId = await getSystemSenderId();
       await prisma.message.create({
         data: {
           chatId: linkedChat.id,
-          senderId: adminUser?.id || null,
+          senderId,
           content: message.content,
           isAi: false,
           discordMessageId: message.id
@@ -278,18 +320,35 @@ async function pollDatabase() {
         type: 'SUPPORT',
         discordChannelId: null
       },
-      include: { 
-        buyer: true,
+      select: {
+        id: true,
+        type: true,
+        orderId: true,
         order: {
-          include: { 
-            items: { include: { product: true } } 
+          select: {
+            id: true,
+            total: true,
+            paymentMethod: true,
+            status: true,
+            items: {
+              select: {
+                quantity: true,
+                product: { select: { name: true } }
+              }
+            }
           }
+        },
+        buyer: {
+          select: { name: true, email: true }
         }
       },
-      take: 5 // Process max 5 at a time to prevent rate limits
+      orderBy: { createdAt: 'asc' },
+      take: MAX_SUPPORT_TICKETS_PER_PASS
     });
 
-    const ticketCategoryId = await resolveTicketCategoryId(guild);
+    const ticketCategoryId = newChats.length > 0
+      ? await resolveTicketCategoryId(guild)
+      : null;
 
     if (newChats.length > 0 && !ticketCategoryId) {
       console.warn(`[WARN] ⚠️ No ticket category! Run !setup tickets. Missing ${newChats.length} chats.`);
@@ -313,14 +372,6 @@ async function pollDatabase() {
             where: { id: chat.id },
             data: { discordChannelId: channel.id }
           });
-
-          // Also link to Order
-          if (chat.orderId) {
-            await prisma.order.update({
-              where: { id: chat.orderId },
-              data: { discordChannelId: channel.id }
-            }).catch(() => {});
-          }
 
           if (chat.type === 'SUPPORT') {
             await channel.send(`🎟️ **New Support Ticket**\n**User:** ${buyerName} (${chat.buyer?.email || 'Guest'})\n**Type:** ${chat.type}\n\n*Type \`!close\` to close.*`);
@@ -362,8 +413,14 @@ async function pollDatabase() {
         discordMessageId: null,
         chat: { discordChannelId: { not: null } }
       },
-      include: { chat: true, sender: true },
-      take: 10
+      select: {
+        id: true,
+        content: true,
+        chat: { select: { discordChannelId: true } },
+        sender: { select: { name: true } }
+      },
+      orderBy: { createdAt: 'asc' },
+      take: MAX_MESSAGES_PER_PASS
     });
 
     for (const msg of unsyncedMessages) {
@@ -375,6 +432,14 @@ async function pollDatabase() {
       const channel = guild.channels.cache.get(channelId) as TextChannel;
       if (channel) {
         try {
+          const claimToken = `PENDING:${process.pid}:${msg.id}`;
+          const claim = await prisma.message.updateMany({
+            where: { id: msg.id, discordMessageId: null },
+            data: { discordMessageId: claimToken }
+          });
+
+          if (!claim.count) continue;
+
           const senderName = msg.sender?.name || 'Customer';
           const dMsg = await channel.send(`**[${senderName}]**: ${msg.content || '[Attachment/Image]'}`);
 
@@ -386,6 +451,10 @@ async function pollDatabase() {
           saveState();
           await sleep(500); // rate limiting safety
         } catch (e) {
+          await prisma.message.updateMany({
+            where: { id: msg.id, discordMessageId: { startsWith: `PENDING:${process.pid}:` } },
+            data: { discordMessageId: null }
+          }).catch(() => {});
           console.error("Message sync error:", e);
         }
       }
@@ -394,7 +463,8 @@ async function pollDatabase() {
     // 3. CLEANUP DELETED CHATS
     const deletedChats = await prisma.chat.findMany({
       where: { status: 'DELETED' },
-      take: 5
+      select: { id: true, type: true, buyerId: true, discordChannelId: true },
+      take: MAX_CLEANUP_ITEMS_PER_PASS
     });
 
     for (const chat of deletedChats) {
@@ -422,7 +492,8 @@ async function pollDatabase() {
     // 4. HANDLE CLOSED CHATS FROM WEB
     const webClosedChats = await prisma.chat.findMany({
       where: { status: 'CLOSED_BY_WEB', discordChannelId: { not: null } },
-      take: 5
+      select: { id: true, discordChannelId: true },
+      take: MAX_CLEANUP_ITEMS_PER_PASS
     });
 
     for (const chat of webClosedChats) {
@@ -451,8 +522,14 @@ async function pollDatabase() {
         status: { in: ['COMPLETED', 'CANCELLED'] },
         discordChannelId: { not: null }
       },
-      include: { chat: true },
-      take: 5
+      select: {
+        id: true,
+        status: true,
+        discordChannelId: true,
+        confirmationSource: true,
+        chat: { select: { id: true } }
+      },
+      take: MAX_CLEANUP_ITEMS_PER_PASS
     });
 
     for (const order of resolvedOrders) {
@@ -485,6 +562,10 @@ async function pollDatabase() {
     console.error('Polling critical error:', err);
   } finally {
     isPolling = false;
+    if (pendingPoll) {
+      pendingPoll = false;
+      requestPoll();
+    }
   }
 }
 
@@ -494,6 +575,10 @@ process.on('unhandledRejection', error => {
 });
 process.on('uncaughtException', error => {
   console.error('Uncaught Exception:', error);
+});
+process.on('beforeExit', () => {
+  if (stateFlushTimer) clearTimeout(stateFlushTimer);
+  flushState();
 });
 
 client.login(TOKEN);
