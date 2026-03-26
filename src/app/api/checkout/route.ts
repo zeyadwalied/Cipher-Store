@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
 import { isSiteInMaintenanceMode } from "@/lib/maintenance"
+import { triggerBotSync } from "@/lib/bot-sync"
 import { calculateDiscount } from "@/lib/discountEngine"
 import { sendDiscordLog } from "@/lib/discord"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
@@ -164,6 +165,9 @@ export async function POST(req: Request) {
     if (["VODAFONE_CASH", "VODAFONE", "INSTAPAY", "PAYPAL"].includes(methodStr.toUpperCase())) {
       redirectUrl = `/checkout/payment/${result.order.id}`
     }
+
+    // Instantly wake up the Discord bot to create the ticket
+    await triggerBotSync()
 
     // Log the order to Discord
     try {
