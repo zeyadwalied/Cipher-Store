@@ -54,7 +54,7 @@ async function resolveTicketCategoryId(guildId: string, preferredCategoryId?: st
       name: "Tickets",
       type: 4,
     });
-    const categoryId = created?.id || preferredCategoryId || null;
+    const categoryId = created?.id || null;
     if (categoryId) {
       cachedCategory = { guildId, categoryId, expiresAt: Date.now() + 10 * 60 * 1000 };
     }
@@ -126,12 +126,26 @@ export async function createOrderTicket(data: OrderTicketData): Promise<string |
     const channelName = `order-${safeName}-${data.orderId.slice(-4)}`;
 
     // 1. Create the text channel under the Tickets category
-    const channel = await discordAPI(`/guilds/${guildId}/channels`, "POST", {
+    let channel = await discordAPI(`/guilds/${guildId}/channels`, "POST", {
       name: channelName,
       type: 0, // GUILD_TEXT
       parent_id: resolvedCategoryId,
       topic: `Order #${data.orderId} | Customer: ${data.customerEmail}`,
     });
+
+    if (!channel?.id) {
+      cachedCategory = null;
+
+      const retryCategoryId = await resolveTicketCategoryId(guildId, null);
+      if (retryCategoryId && retryCategoryId !== resolvedCategoryId) {
+        channel = await discordAPI(`/guilds/${guildId}/channels`, "POST", {
+          name: channelName,
+          type: 0,
+          parent_id: retryCategoryId,
+          topic: `Order #${data.orderId} | Customer: ${data.customerEmail}`,
+        });
+      }
+    }
 
     if (!channel?.id) return null;
 

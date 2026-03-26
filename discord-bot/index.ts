@@ -1,9 +1,17 @@
 import { Client, GatewayIntentBits, Partials, ChannelType, TextChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
-import prisma from '../src/lib/prisma';
 import fs from 'fs';
 import path from 'path';
 import "dotenv/config";
 import { Client as PgClient } from 'pg'; // <-- ADDED FOR INSTANT REALTIME SYNC
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DIRECT_URL || process.env.DATABASE_URL,
+    },
+  },
+});
 
 const client = new Client({
   intents: [
@@ -131,7 +139,7 @@ function requestPoll() {
   void pollDatabase();
 }
 
-client.on('ready', async () => {
+client.on('clientReady', async () => {
   console.log(`🤖 Discord Bot Logged in as ${client.user?.tag}!`);
   
   // 1. Keep a backup polling loop just in case a notification drops
@@ -211,7 +219,8 @@ client.on('messageCreate', async (message) => {
       } else {
         await message.reply('🧹 This channel is not linked to a web ticket, but I will delete it anyway in 5 seconds...');
       }
-      setTimeout(() => message.channel.delete().catch(() => { }), 5000);
+      const channelToDelete = message.channel;
+      setTimeout(() => channelToDelete?.delete().catch(() => { }), 5000);
       return;
     }
 

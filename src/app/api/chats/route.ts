@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
 import { triggerBotSync } from "@/lib/bot-sync"
+import { getOrCreateOngoingSupportChat } from "@/lib/support-chat"
 
 export async function GET(req: Request) {
   try {
@@ -57,33 +58,31 @@ export async function POST(req: Request) {
     const { type } = await req.json()
 
     if (type === "SUPPORT") {
-      // Check if user already has an active support chat
-      const existing = await prisma.chat.findFirst({
-        where: { type: "SUPPORT", buyerId: session.user.id }
-      })
-
-      if (existing) {
-        return NextResponse.json(existing)
-      }
-
-      const chat = await prisma.chat.create({
-        data: {
-          type: "SUPPORT",
-          buyerId: session.user.id,
-        }
-      })
-
-      await prisma.message.create({
-        data: {
-          chatId: chat.id,
+      const { chatId } = await getOrCreateOngoingSupportChat({
+        buyerId: session.user.id,
+        initialMessage: {
           senderId: session.user.id,
-          content: "Hello, I need some help."
+          content: "Hello, I need some help.",
+        },
+      })
+
+      const chat = await prisma.chat.findUnique({
+        where: { id: chatId },
+        include: {
+          buyer: { select: { name: true, image: true, email: true } },
+          seller: { select: { name: true, image: true, email: true } },
+          order: { select: { id: true, total: true, status: true } },
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1
+          }
         }
       })
 
+      if (!chat) return new NextResponse("Not Found", { status: 404 })
 
       // Wake up Discord Bot instantly
-      await triggerBotSync();
+      await triggerBotSync()
 
       return NextResponse.json(chat)
     }

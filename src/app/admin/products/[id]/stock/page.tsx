@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useParams, useRouter } from "next/navigation"
-import { Save, Trash, Plus, ShieldCheck, Key, Search } from "lucide-react"
+import { Trash, Plus, ShieldCheck, Key, Search, Loader2 } from "lucide-react"
 
 export default function ProductStockPage() {
   const params = useParams()
@@ -13,6 +13,7 @@ export default function ProductStockPage() {
   const [stock, setStock] = useState<any[]>([])
   const [newCode, setNewCode] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [isAddingStock, setIsAddingStock] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
 
   const fetchStock = async () => {
@@ -36,7 +37,9 @@ export default function ProductStockPage() {
 
   const handleAddStock = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newCode.trim()) return
+    if (!newCode.trim() || isAddingStock) return
+
+    setIsAddingStock(true)
 
     try {
       const res = await fetch(`/api/admin/products/${params.id}/stock`, {
@@ -53,6 +56,8 @@ export default function ProductStockPage() {
       }
     } catch (e) {
       console.error(e)
+    } finally {
+      setIsAddingStock(false)
     }
   }
 
@@ -143,9 +148,20 @@ export default function ProductStockPage() {
           />
           <button
             type="submit"
-            className="bg-[#a855f7] hover:bg-[#9333ea] text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors shrink-0"
+            disabled={isAddingStock || !newCode.trim()}
+            className="bg-[#a855f7] hover:bg-[#9333ea] text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Plus className="h-5 w-5" /> Add Code
+            {isAddingStock ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <Plus className="h-5 w-5" />
+                Add Code
+              </>
+            )}
           </button>
         </form>
       </div>
