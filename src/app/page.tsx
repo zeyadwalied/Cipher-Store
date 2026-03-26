@@ -44,7 +44,7 @@ export default async function Home() {
           })
         }}
       />      {/* ─── HERO ─────────────────────────────────────────────── */}
-      <section className="relative w-full min-h-[620px] flex items-center justify-center overflow-hidden border-b border-[#00f5ff]/20">
+      <section className="relative w-full min-h-[620px] flex items-center justify-center overflow-hidden border-b border-[#00f5ff]/20 bg-[var(--background)]">
 
         {/* Static Geometric Shapes (Inspired by User Image) */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
