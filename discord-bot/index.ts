@@ -48,12 +48,14 @@ function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 client.on('ready', async () => {
   console.log(`🤖 Discord Bot Logged in as ${client.user?.tag}!`);
   
-  // 1. Keep a relaxed backup polling loop just in case a notification drops
-  setInterval(pollDatabase, 60000); // Changed from 5000ms (17k queries/day) to 60000ms!
+  // 1. Keep a backup polling loop just in case a notification drops
+  setInterval(pollDatabase, 15000); // Every 15 seconds as safety net
 
   // 2. Postgres LISTEN/NOTIFY -> The Magic!
+  // MUST use DIRECT_URL (port 5432) because PgBouncer (port 6543) does NOT support LISTEN/NOTIFY!
   try {
-    const pgClient = new PgClient({ connectionString: process.env.DATABASE_URL });
+    const directUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+    const pgClient = new PgClient({ connectionString: directUrl });
     await pgClient.connect();
     
     pgClient.on('notification', (msg: any) => {
