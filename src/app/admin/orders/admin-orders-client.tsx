@@ -7,9 +7,13 @@ export default function AdminOrdersClient({ initialOrders, currentUserRole }: { 
   const [orders, setOrders] = useState(initialOrders)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedOrderForChat, setSelectedOrderForChat] = useState<any | null>(null)
+  const [statusUpdatingOrderId, setStatusUpdatingOrderId] = useState<string | null>(null)
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
+    if (statusUpdatingOrderId === orderId) return
+
     try {
+      setStatusUpdatingOrderId(orderId)
       const res = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -26,6 +30,8 @@ export default function AdminOrdersClient({ initialOrders, currentUserRole }: { 
       }
     } catch (e) {
       console.error(e)
+    } finally {
+      setStatusUpdatingOrderId(current => current === orderId ? null : current)
     }
   }
 
@@ -166,10 +172,15 @@ export default function AdminOrdersClient({ initialOrders, currentUserRole }: { 
                     {order.status === 'PENDING' && (
                       <button
                         onClick={() => handleStatusChange(order.id, "COMPLETED")}
-                        className="bg-green-500/10 hover:bg-green-500/20 text-green-500 p-1 rounded transition-colors"
+                        disabled={statusUpdatingOrderId === order.id}
+                        className="bg-green-500/10 hover:bg-green-500/20 text-green-500 p-1 rounded transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         title="Quick Confirm Order & Send Emails"
                       >
-                        <CheckCircle className="h-4 w-4" />
+                        {statusUpdatingOrderId === order.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4" />
+                        )}
                       </button>
                     )}
 

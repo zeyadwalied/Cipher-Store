@@ -26,9 +26,11 @@ const TOKEN = process.env.DISCORD_TOKEN || "YOUR_DISCORD_TOKEN_HERE";
 const ENV_TICKET_CATEGORY_ID = process.env.DISCORD_TICKET_CATEGORY_ID || null;
 const FALLBACK_POLL_INTERVAL_MS = 30000;
 const MAX_SUPPORT_TICKETS_PER_PASS = 3;
+const MAX_ORDER_TICKETS_PER_PASS = 2;
 const MAX_MESSAGES_PER_PASS = 10;
 const MAX_CLEANUP_ITEMS_PER_PASS = 5;
 const STATE_FLUSH_DEBOUNCE_MS = 1000;
+const ORDER_TICKET_FALLBACK_DELAY_MS = 30000;
 
 const CONFIG_FILE = path.join(__dirname, 'bot-config.json');
 
@@ -137,6 +139,107 @@ function requestPoll() {
   }
 
   void pollDatabase();
+}
+
+async function createSupportTicketChannel(guild: any, ticketCategoryId: string, chat: any) {
+  const claimToken = `PENDING_SUPPORT:${process.pid}:${chat.id}`;
+  const claim = await prisma.chat.updateMany({
+    where: { id: chat.id, discordChannelId: null },
+    data: { discordChannelId: claimToken }
+  });
+
+  if (!claim.count) return;
+
+  try {
+    const buyerName = chat.buyer?.name || 'guest';
+    const channelName = `support-${buyerName}-${chat.id.slice(-4)}`.toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+    const channel = await guild.channels.create({
+      name: channelName,
+      type: ChannelType.GuildText,
+      parent: ticketCategoryId,
+      topic: `Web ${chat.type} ID: ${chat.id} | User: ${chat.buyer?.email || 'N/A'}`
+    });
+
+    await prisma.chat.update({
+      where: { id: chat.id },
+      data: { discordChannelId: channel.id }
+    });
+
+    await channel.send(`ðŸŽŸï¸ **New Support Ticket**\n**User:** ${buyerName} (${chat.buyer?.email || 'Guest'})\n**Type:** ${chat.type}\n\n*Type \`!close\` to close.*`);
+    await sleep(1000);
+  } catch (err) {
+    await prisma.chat.updateMany({
+      where: { id: chat.id, discordChannelId: claimToken },
+      data: { discordChannelId: null }
+    }).catch(() => {});
+    throw err;
+  }
+}
+
+async function createOrderFallbackTicketChannel(guild: any, ticketCategoryId: string, chat: any) {
+  if (!chat.order) return;
+
+  const claimToken = `PENDING_ORDER:${process.pid}:${chat.id}`;
+  const claim = await prisma.chat.updateMany({
+    where: { id: chat.id, discordChannelId: null },
+    data: { discordChannelId: claimToken }
+  });
+
+  if (!claim.count) return;
+
+  try {
+    const buyerName = chat.buyer?.name || 'guest';
+    const order = chat.order;
+    const channelName = `order-${buyerName}-${order.id.slice(-4)}`.toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+    const channel = await guild.channels.create({
+      name: channelName,
+      type: ChannelType.GuildText,
+      parent: ticketCategoryId,
+      topic: `Web ORDER ID: ${order.id} | User: ${chat.buyer?.email || 'N/A'}`
+    });
+
+    const itemsStr = order.items.map((i: any) => `${i.quantity}x ${i.product.name}`).join('\n');
+    const embed = new EmbedBuilder()
+      .setTitle(`ðŸ›’ New Order Ticket (#${order.id})`)
+      .setColor('#00f5ff')
+      .addFields(
+        { name: 'Customer', value: `${buyerName} (${chat.buyer?.email || 'Guest'})`, inline: true },
+        { name: 'Total', value: `${order.total.toFixed(2)} EGP`, inline: true },
+        { name: 'Method', value: order.paymentMethod, inline: true },
+        { name: 'Items', value: itemsStr || 'None', inline: false }
+      )
+      .setTimestamp();
+
+    const acceptBtn = new ButtonBuilder().setCustomId(`accept_${order.id}`).setLabel('âœ… Confirm Order').setStyle(ButtonStyle.Success);
+    const rejectBtn = new ButtonBuilder().setCustomId(`reject_${order.id}`).setLabel('âŒ Reject Order').setStyle(ButtonStyle.Danger);
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(acceptBtn, rejectBtn);
+
+    await channel.send({
+      content: `@here ðŸŽŸï¸ **New Order Placed!** You can chat with the customer below.\n*Type \`!close\` to close the ticket.*`,
+      embeds: [embed],
+      components: order.status === 'PENDING' ? [row] : []
+    });
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { discordChannelId: channel.id }
+    });
+
+    await prisma.chat.update({
+      where: { id: chat.id },
+      data: { discordChannelId: channel.id }
+    });
+
+    await sleep(1000);
+  } catch (err) {
+    await prisma.chat.updateMany({
+      where: { id: chat.id, discordChannelId: claimToken },
+      data: { discordChannelId: null }
+    }).catch(() => {});
+    throw err;
+  }
 }
 
 client.on('clientReady', async () => {
@@ -416,7 +519,62 @@ async function pollDatabase() {
       }
     }
 
-    // 2. TICKET MESSAGES SYNC
+    // 2. ORDER TICKET FALLBACK
+    const fallbackOrderChats = await prisma.chat.findMany({
+      where: {
+        type: 'ORDER',
+        discordChannelId: null,
+        createdAt: { lte: new Date(Date.now() - ORDER_TICKET_FALLBACK_DELAY_MS) },
+        order: {
+          is: {
+            discordChannelId: null,
+            status: { in: ['PENDING', 'PAID'] }
+          }
+        }
+      },
+      select: {
+        id: true,
+        buyer: {
+          select: { name: true, email: true }
+        },
+        order: {
+          select: {
+            id: true,
+            total: true,
+            paymentMethod: true,
+            status: true,
+            items: {
+              select: {
+                quantity: true,
+                product: { select: { name: true } }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'asc' },
+      take: MAX_ORDER_TICKETS_PER_PASS
+    });
+
+    const orderTicketCategoryId = fallbackOrderChats.length > 0
+      ? (ticketCategoryId || await resolveTicketCategoryId(guild))
+      : null;
+
+    if (fallbackOrderChats.length > 0 && !orderTicketCategoryId) {
+      console.warn(`[WARN] No ticket category for order fallback. Missing ${fallbackOrderChats.length} order chats.`);
+    }
+
+    if (fallbackOrderChats.length > 0 && orderTicketCategoryId) {
+      for (const chat of fallbackOrderChats) {
+        try {
+          await createOrderFallbackTicketChannel(guild, orderTicketCategoryId, chat);
+        } catch (err) {
+          console.error(`Failed to create fallback order ticket for chat ${chat.id}:`, err);
+        }
+      }
+    }
+
+    // 3. TICKET MESSAGES SYNC
     const unsyncedMessages = await prisma.message.findMany({
       where: {
         discordMessageId: null,
