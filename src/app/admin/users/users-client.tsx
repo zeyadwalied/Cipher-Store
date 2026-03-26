@@ -55,6 +55,7 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
                     const syncData = await syncRes.json().catch(() => null)
 
                     if (syncData?.authenticated) {
+                        window.dispatchEvent(new CustomEvent("sync-role", { detail: syncData.role }))
                         await update({ role: syncData.role, isBlocked: syncData.isBlocked })
                     }
 

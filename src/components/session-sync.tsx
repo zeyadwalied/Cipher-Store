@@ -1,69 +1,106 @@
 "use client"
 
-import { useEffect } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { useRouter, usePathname } from "next/navigation"
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
+import { signOut, useSession } from "next-auth/react"
+import { usePathname, useRouter } from "next/navigation"
+
+const ADMIN_ROLES = ["DEV", "OWNER", "MANAGER", "SELLER", "SUPPORT"]
 
 export default function SessionSync() {
-    const { data: session, status, update } = useSession()
-    const router = useRouter()
-    const pathname = usePathname()
-    const lastDispatchedRole = useRef<string | null>(null)
+  const { data: session, status, update } = useSession()
+  const router = useRouter()
+  const pathname = usePathname()
+  const lastDispatchedRole = useRef<string | null>(null)
+  const isCheckingRef = useRef(false)
 
-    useEffect(() => {
-        if (status !== "authenticated" || !session?.user) return
-        
-        let isUpdating = false;
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.user?.id) {
+      lastDispatchedRole.current = null
+      return
+    }
 
-        const checkSync = async () => {
-            if (isUpdating) return;
-            try {
-                const res = await fetch("/api/auth/sync")
-                if (res.ok) {
-                    const data = await res.json()
+    let isActive = true
 
-                    if (!data.authenticated || data.isBlocked) {
-                        console.log("SessionSync: User blocked or deleted, signing out...")
-                        signOut({ callbackUrl: "/login?error=Blocked" })
-                        return
-                    }
+    const syncNow = async () => {
+      if (!isActive || isCheckingRef.current) return
+      isCheckingRef.current = true
 
-                    // Only dispatch if role actually changed or first time
-                    if (data.role !== lastDispatchedRole.current) {
-                        window.dispatchEvent(new CustomEvent('sync-role', { detail: data.role }))
-                        lastDispatchedRole.current = data.role
-                    }
+      try {
+        const res = await fetch("/api/auth/sync", { cache: "no-store" })
+        if (!res.ok) return
 
-                    // Check for role mismatch with current SESSION for internal auth update
-                    if (data.role !== (session.user as any).role) {
-                        isUpdating = true;
-                        await update()
-                        
-                        // ONLY force a hard redirect if the user is currently on an admin page
-                        if (pathname.startsWith("/admin") && data.role === "USER") {
-                            console.warn("SessionSync: Admin access revoked while on admin page! Kicking out...")
-                            window.location.href = "/" 
-                            return
-                        }
-                        
-                        setTimeout(() => { isUpdating = false; }, 2000);
-                    }
-                }
-            } catch (e) {
-                console.error("Sync check failed", e)
-            }
+        const data = await res.json()
+        if (!isActive) return
+
+        if (!data.authenticated || data.isBlocked) {
+          await signOut({ callbackUrl: "/login?error=SessionExpired" })
+          return
         }
 
-        // Check once every 15 seconds for role/block changes (Security Hardened & Performance Optimized)
-        const interval = setInterval(checkSync, 15000)
+        if (data.role !== lastDispatchedRole.current) {
+          window.dispatchEvent(new CustomEvent("sync-role", { detail: data.role }))
+          lastDispatchedRole.current = data.role
+        }
 
-        // Also check on mount
-        checkSync()
+        if (
+          data.role !== session.user.role ||
+          data.isBlocked !== session.user.isBlocked
+        ) {
+          await update({ role: data.role, isBlocked: data.isBlocked })
+        }
 
-        return () => clearInterval(interval)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+        if (pathname.startsWith("/admin") && !ADMIN_ROLES.includes(data.role)) {
+          router.replace("/dashboard")
+          router.refresh()
+          return
+        }
 
-    return null
+        if (!pathname.startsWith("/admin") && data.role !== session.user.role) {
+          router.refresh()
+        }
+      } catch (error) {
+        console.error("Session sync failed:", error)
+      } finally {
+        isCheckingRef.current = false
+      }
+    }
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void syncNow()
+      }
+    }
+
+    const onWindowFocus = () => {
+      void syncNow()
+    }
+
+    const interval = window.setInterval(() => {
+      void syncNow()
+    }, 2000)
+
+    document.addEventListener("visibilitychange", onVisibilityChange)
+    window.addEventListener("focus", onWindowFocus)
+    window.addEventListener("pageshow", onWindowFocus)
+
+    void syncNow()
+
+    return () => {
+      isActive = false
+      window.clearInterval(interval)
+      document.removeEventListener("visibilitychange", onVisibilityChange)
+      window.removeEventListener("focus", onWindowFocus)
+      window.removeEventListener("pageshow", onWindowFocus)
+    }
+  }, [
+    pathname,
+    router,
+    session?.user?.id,
+    session?.user?.isBlocked,
+    session?.user?.role,
+    status,
+    update,
+  ])
+
+  return null
 }
