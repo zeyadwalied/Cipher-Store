@@ -41,11 +41,7 @@ export function SteamGameRequestModal() {
                 `💵 سعر اللعبة على ستيم: $${gamePrice.trim()} (${approxEGP})`,
             ].join("\n")
 
-            const chatRes = await fetch("/api/chats/support", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ initialMessage }),
-            })
+            const chatRes = await fetch("/api/chats/support")
 
             if (!chatRes.ok) {
                 if (chatRes.status === 401) {
@@ -58,9 +54,13 @@ export function SteamGameRequestModal() {
             }
 
             const chat = await chatRes.json()
+            const params = new URLSearchParams({
+                draft: initialMessage,
+                autoSend: "1",
+            })
 
             setIsOpen(false)
-            router.push(`/chat/${chat.id}`)
+            router.push(`/chat/${chat.id}?${params.toString()}`)
         } catch (error) {
             console.error(error)
             alert("حدث خطأ أثناء تجهيز محادثة الدعم، يرجى المحاولة مرة أخرى")

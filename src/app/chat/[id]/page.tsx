@@ -1,6 +1,7 @@
 "use client"
 
 import { use, useEffect, useState, useRef } from "react"
+import { useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { MessageSquare, Send, ArrowLeft, LifeBuoy, Package, User, Repeat, ShieldAlert, Loader2, ChevronDown } from "lucide-react"
 import Link from "next/link"
@@ -9,6 +10,7 @@ import { CyberBackgroundBranches } from "@/components/CyberBackgroundBranches"
 
 export default function ChatWindow({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const searchParams = useSearchParams()
   const { data: session } = useSession()
   const [chat, setChat] = useState<any>(null)
   const [newMessage, setNewMessage] = useState("")
@@ -16,7 +18,11 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
   const [isManaging, setIsManaging] = useState(false)
   const [staff, setStaff] = useState<any[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const hasAppliedDraftRef = useRef(false)
+  const hasTriedAutoSendRef = useRef(false)
   const canManageChat = !!session?.user && ["DEV", "OWNER", "MANAGER", "SUPPORT"].includes(session.user.role)
+  const draftMessage = searchParams.get("draft") || ""
+  const shouldAutoSendDraft = searchParams.get("autoSend") === "1"
 
   useEffect(() => {
     if (!canManageChat) return
@@ -45,6 +51,56 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
     // Scroll to bottom when messages load
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [chat?.messages?.length])
+
+  useEffect(() => {
+    if (hasAppliedDraftRef.current || !draftMessage) return
+
+    setNewMessage(draftMessage)
+    hasAppliedDraftRef.current = true
+  }, [draftMessage])
+
+  useEffect(() => {
+    if (!chat || !draftMessage || !shouldAutoSendDraft || hasTriedAutoSendRef.current) {
+      return
+    }
+
+    if (chat.status?.startsWith("CLOSED_") || chat.order?.status === "COMPLETED" || chat.order?.status === "CANCELLED") {
+      return
+    }
+
+    const alreadySent = chat.messages?.some((msg: any) => msg.senderId === session?.user?.id && msg.content === draftMessage)
+    if (alreadySent) {
+      hasTriedAutoSendRef.current = true
+      return
+    }
+
+    hasTriedAutoSendRef.current = true
+
+    const sendDraft = async () => {
+      setIsSending(true)
+      try {
+        const res = await fetch(`/api/chats/${id}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: draftMessage })
+        })
+
+        if (res.ok) {
+          setNewMessage("")
+          fetchChat()
+        } else {
+          setNewMessage(draftMessage)
+        }
+      } catch (e) {
+        console.error("Failed to auto-send draft", e)
+        setNewMessage(draftMessage)
+      } finally {
+        setIsSending(false)
+      }
+    }
+
+    void sendDraft()
+  }, [chat, draftMessage, shouldAutoSendDraft, id, session?.user?.id])
 
   const fetchChat = async (silent = false) => {
     try {
