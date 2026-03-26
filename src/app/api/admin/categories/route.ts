@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"
 import { getVerifiedUser } from "@/lib/admin-check"
 
 async function isAdmin() {
-  return await getVerifiedUser(["OWNER", "MANAGER"])
+  return await getVerifiedUser(["DEV", "OWNER", "MANAGER"])
 }
 
 export async function GET() {

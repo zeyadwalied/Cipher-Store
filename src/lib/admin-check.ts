@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
 
-export type AdminRole = "OWNER" | "MANAGER" | "SELLER" | "SUPPORT"
+export type AdminRole = "DEV" | "OWNER" | "MANAGER" | "SELLER" | "SUPPORT"
 
 /**
  * Verifies the current user's role against the database.

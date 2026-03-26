@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
-import { auth } from "@/auth"
 
 import { getVerifiedUser } from "@/lib/admin-check"
 
 export async function DELETE() {
   try {
-    const requester = await getVerifiedUser(["OWNER", "MANAGER"])
+    const requester = await getVerifiedUser(["DEV", "OWNER", "MANAGER"])
     if (!requester) {
       return new NextResponse("Unauthorized", { status: 401 })
     }

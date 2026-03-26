@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic"
 
 async function isAdmin() {
     const session = await auth()
-    return ["OWNER", "MANAGER"].includes(session?.user?.role || "")
+    return ["DEV", "OWNER", "MANAGER"].includes(session?.user?.role || "")
 }
 
 export async function PUT(req: Request) {

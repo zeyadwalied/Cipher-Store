@@ -16,13 +16,19 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
   const [isManaging, setIsManaging] = useState(false)
   const [staff, setStaff] = useState<any[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const canManageChat = !!session?.user && ["DEV", "OWNER", "MANAGER", "SUPPORT"].includes(session.user.role)
 
   useEffect(() => {
+    if (!canManageChat) return
+
     fetch("/api/admin/staff")
-      .then(res => res.json())
+      .then(async (res) => {
+        if (!res.ok) return []
+        return res.json()
+      })
       .then(data => setStaff(data))
       .catch(console.error)
-  }, [])
+  }, [canManageChat])
 
   useEffect(() => {
     fetchChat()
@@ -149,7 +155,7 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
           </div>
 
           {/* Staff Controls */}
-          {session?.user && ["OWNER", "MANAGER", "SUPPORT"].includes(session.user.role) && (
+          {canManageChat && (
             <div className="flex items-center gap-2">
               <div className="flex flex-col items-end gap-1">
                 {chat.assignedToId && (

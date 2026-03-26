@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"
 
 export default async function AdminSupportChatsPage() {
   const session = await auth()
-  if (!session || !["OWNER", "MANAGER", "SUPPORT"].includes(session.user.role)) {
+  if (!session || !["DEV", "OWNER", "MANAGER", "SUPPORT"].includes(session.user.role)) {
     redirect("/admin/products")
   }
 

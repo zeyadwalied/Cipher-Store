@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
-import { auth } from "@/auth"
-
-import { getVerifiedUser, AdminRole } from "@/lib/admin-check"
+import { getVerifiedUser } from "@/lib/admin-check"
 
 async function verifySupportAdmin() {
-  return await getVerifiedUser(["OWNER", "MANAGER", "SUPPORT"])
+  return await getVerifiedUser(["DEV", "OWNER", "MANAGER", "SUPPORT"])
 }
 
 export async function GET() {

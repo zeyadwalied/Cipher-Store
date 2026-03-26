@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
-import { auth } from "@/auth"
 import { revalidateTag } from "next/cache"
 import { sendDiscordLog } from "@/lib/discord"
 
 export const dynamic = "force-dynamic"
 
-import { getVerifiedUser, AdminRole } from "@/lib/admin-check"
+import { getVerifiedUser } from "@/lib/admin-check"
 import { sanitizeName } from "@/lib/sanitize"
 
 // Check allowed roles for product management using DB-level verification
 async function getAuth() {
-  return await getVerifiedUser(["OWNER", "MANAGER", "SELLER"])
+  return await getVerifiedUser(["DEV", "OWNER", "MANAGER", "SELLER"])
 }
 
 export async function GET() {

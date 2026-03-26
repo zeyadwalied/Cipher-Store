@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 
 export default async function DiscountsPage() {
   const session = await auth()
-  if (!session?.user || !['OWNER', 'MANAGER'].includes(session.user.role)) {
+  if (!session?.user || !['DEV', 'OWNER', 'MANAGER'].includes(session.user.role)) {
     redirect("/")
   }
 

@@ -12,7 +12,13 @@ export default function AdminOverviewClient() {
 
   useEffect(() => {
     fetch("/api/admin/dashboard-stats")
-      .then(res => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          const fallback = await res.text()
+          throw new Error(fallback || "Failed to load dashboard stats")
+        }
+        return res.json()
+      })
       .then(data => {
         setStats(data)
         setIsLoading(false)

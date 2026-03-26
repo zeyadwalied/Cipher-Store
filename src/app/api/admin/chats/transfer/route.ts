@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
-import { auth } from "@/auth"
 
 import { getVerifiedUser } from "@/lib/admin-check"
 
@@ -8,7 +7,7 @@ export async function PUT(
   req: Request
 ) {
   try {
-    const requester = await getVerifiedUser(["OWNER", "SUPPORT", "MANAGER"])
+    const requester = await getVerifiedUser(["DEV", "OWNER", "SUPPORT", "MANAGER"])
     if (!requester) {
       return new NextResponse("Unauthorized", { status: 401 })
     }

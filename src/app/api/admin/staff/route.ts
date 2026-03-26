@@ -5,13 +5,13 @@ import { auth } from "@/auth"
 export async function GET() {
   try {
     const session = await auth()
-    if (!session || !["OWNER", "MANAGER", "SUPPORT"].includes(session.user.role)) {
+    if (!session || !["DEV", "OWNER", "MANAGER", "SUPPORT"].includes(session.user.role)) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
     const staff = await prisma.user.findMany({
       where: {
-        role: { in: ["OWNER", "MANAGER", "SUPPORT"] }
+        role: { in: ["DEV", "OWNER", "MANAGER", "SUPPORT"] }
       },
       select: {
         id: true,

@@ -24,7 +24,19 @@ export async function POST(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    if (await isSiteInMaintenanceMode() && session.user.role !== "OWNER") {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, name: true, email: true, role: true }
+    })
+
+    if (!currentUser) {
+      return NextResponse.json(
+        { message: "Your account could not be found. Please sign in again." },
+        { status: 401 }
+      )
+    }
+
+    if (await isSiteInMaintenanceMode() && currentUser.role !== "OWNER") {
       return new NextResponse("System under maintenance", { status: 503 })
     }
 
@@ -95,7 +107,7 @@ export async function POST(req: Request) {
     const result = await prisma.$transaction(async (tx) => {
       const order = await tx.order.create({
         data: {
-          userId: session.user.id,
+          userId: currentUser.id,
           total,
           paymentMethod: paymentMethod || "VODAFONE_CASH",
           status: "PENDING",
@@ -141,7 +153,7 @@ export async function POST(req: Request) {
         data: {
           type: "ORDER",
           orderId: order.id,
-          buyerId: session.user.id,
+          buyerId: currentUser.id,
           sellerId: finalSellerId,
         }
       })
@@ -150,7 +162,7 @@ export async function POST(req: Request) {
       await tx.message.create({
         data: {
           chatId: chat.id,
-          senderId: session.user.id,
+          senderId: currentUser.id,
           content: `Hello, I just placed order #${order.id}.`
         }
       })
@@ -180,10 +192,10 @@ export async function POST(req: Request) {
 
       const channelId = await createOrderTicket({
         orderId: result.order.id,
-        customerName: session.user.name || 'Customer',
-        customerEmail: session.user.email || 'Unknown',
+        customerName: currentUser.name || "Customer",
+        customerEmail: currentUser.email || "Unknown",
         total: result.order.total,
-        paymentMethod: paymentMethod || 'VODAFONE_CASH',
+        paymentMethod: paymentMethod || "VODAFONE_CASH",
         items: ticketItems,
       });
 
@@ -203,7 +215,7 @@ export async function POST(req: Request) {
         color: 0x00f5ff, // Cyan
         fields: [
           { name: "Order ID", value: result.order.id, inline: true },
-          { name: "Customer", value: session.user.email || "Unknown", inline: true },
+          { name: "Customer", value: currentUser.email || "Unknown", inline: true },
           { name: "Amount", value: `$${result.order.total.toFixed(2)}`, inline: true },
           { name: "Method", value: methodStr, inline: true }
         ]
@@ -221,7 +233,7 @@ export async function POST(req: Request) {
           color: 0x0ea5e9,
           fields: [
             { name: "Order ID", value: result.order.id, inline: true },
-            { name: "Customer", value: session.user.email || "Unknown", inline: true }
+            { name: "Customer", value: currentUser.email || "Unknown", inline: true }
           ]
         })
       }

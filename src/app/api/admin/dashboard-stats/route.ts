@@ -1,23 +1,21 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
-import { auth } from "@/auth"
+import { getVerifiedUser } from "@/lib/admin-check"
 
-import { getVerifiedUser, AdminRole } from "@/lib/admin-check"
-
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const requester = await getVerifiedUser(["SELLER", "MANAGER", "OWNER"])
+    const requester = await getVerifiedUser(["DEV", "SELLER", "MANAGER", "OWNER"])
     if (!requester) {
-      return new NextResponse("Forbidden", { status: 403 })
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const role = requester.role
     const userId = requester.id
 
-    let stats: any = {}
+    const stats: Record<string, unknown> = {}
 
     // OVERALL STATS for MANAGER or OWNER
-    if (role === "MANAGER" || role === "OWNER") {
+    if (role === "DEV" || role === "MANAGER" || role === "OWNER") {
       const totalRevenueAgg = await prisma.order.aggregate({
         where: { status: { in: ["PAID", "COMPLETED"] } },
         _sum: { total: true }

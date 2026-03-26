@@ -81,6 +81,7 @@ export function SupportChatsClient({ initialChats, currentUser }: { initialChats
             const lastMsg = chat.messages?.[0]
             const isAssigned = !!chat.sellerId
             const isMine = chat.sellerId === currentUser.id
+            const canResolveAnyChat = ["DEV", "OWNER", "MANAGER"].includes(currentUser.role)
 
             return (
               <div key={chat.id} className="relative group block bg-[#141417] border border-[#27272a] hover:border-yellow-500/40 rounded-xl p-5 transition-colors pr-32">
@@ -133,7 +134,7 @@ export function SupportChatsClient({ initialChats, currentUser }: { initialChats
                       Take Chat
                     </button>
                   )}
-                  {(isMine || currentUser.role === "OWNER") && activeTab === "ONGOING" && (
+                  {(isMine || canResolveAnyChat) && activeTab === "ONGOING" && (
                     <button 
                       onClick={(e) => { e.preventDefault(); handleAction(chat.id, "RESOLVE"); }}
                       className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold shadow-lg"
