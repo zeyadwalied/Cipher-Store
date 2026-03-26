@@ -16,8 +16,8 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
     const [pendingRoles, setPendingRoles] = useState<Record<string, string>>({})
     const router = useRouter()
     const { update } = useSession()
-    const canAssignOwner = currentUser.role === "OWNER" || currentUser.role === "DEV"
-    const adminRoles = ["DEV", "OWNER", "MANAGER", "SELLER", "SUPPORT"]
+    const canAssignOwner = currentUser.role === "OWNER"
+    const adminRoles = ["OWNER", "MANAGER", "SELLER", "SUPPORT"]
 
     const handleRoleChange = (userId: string, newRole: string) => {
         setPendingRoles(prev => ({ ...prev, [userId]: newRole }))
