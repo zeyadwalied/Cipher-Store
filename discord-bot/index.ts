@@ -38,6 +38,7 @@ const CONFIG_FILE = path.join(__dirname, 'bot-config.json');
 let state = {
   orderChannelId: null as string | null,
   ticketCategoryId: null as string | null,
+  backupChannelId: null as string | null,
   logChannelId: null as string | null,
   processedOrders: [] as string[],
   processedMessages: [] as string[]
@@ -132,6 +133,52 @@ async function resolveTicketCategoryId(guild: any) {
   return null;
 }
 
+async function resolveBackupChannel(guild: any) {
+  const preferredIds = [state.backupChannelId].filter(Boolean) as string[];
+
+  for (const id of preferredIds) {
+    const channel = await guild.channels.fetch(id).catch(() => null);
+    if (channel?.type === ChannelType.GuildText) {
+      if (state.backupChannelId !== channel.id) {
+        state.backupChannelId = channel.id;
+        saveState();
+      }
+      return channel as TextChannel;
+    }
+  }
+
+  const channels = await guild.channels.fetch();
+  const fallback = channels.find((channel: any) =>
+    channel?.type === ChannelType.GuildText &&
+    String(channel?.name || "").toLowerCase() === "ticket-backup"
+  );
+
+  if (fallback?.id) {
+    state.backupChannelId = fallback.id;
+    saveState();
+    return fallback as TextChannel;
+  }
+
+  return null;
+}
+
+async function archiveResolvedOrder(guild: any, order: any) {
+  if (!order.discordChannelId) return;
+
+  const channel = guild.channels.cache.get(order.discordChannelId) as TextChannel | undefined;
+  const backupChannel = await resolveBackupChannel(guild);
+  const source = order.confirmationSource === 'DISCORD' ? 'Discord Staff' : 'Website Admin';
+  const archiveMessage = `Archived order ${order.id} (${order.status}) by ${source}. ${channel ? `Ticket: <#${channel.id}>` : ''}`.trim();
+
+  if (backupChannel) {
+    await backupChannel.send(archiveMessage).catch(() => {});
+  }
+
+  if (channel) {
+    await channel.send(`Archive Notice: Order ${order.status} by ${source}. This ticket was archived to #ticket-backup and will remain available.`).catch(() => {});
+  }
+}
+
 function requestPoll() {
   if (isPolling) {
     pendingPoll = true;
@@ -166,7 +213,7 @@ async function createSupportTicketChannel(guild: any, ticketCategoryId: string, 
       data: { discordChannelId: channel.id }
     });
 
-    await channel.send(`ðŸŽŸï¸ **New Support Ticket**\n**User:** ${buyerName} (${chat.buyer?.email || 'Guest'})\n**Type:** ${chat.type}\n\n*Type \`!close\` to close.*`);
+    await channel.send(`**New Support Ticket**\n**User:** ${buyerName} (${chat.buyer?.email || 'Guest'})\n**Type:** ${chat.type}\n\n*Type \`!close\` to close.*`);
     await sleep(1000);
   } catch (err) {
     await prisma.chat.updateMany({
@@ -212,12 +259,12 @@ async function createOrderFallbackTicketChannel(guild: any, ticketCategoryId: st
       )
       .setTimestamp();
 
-    const acceptBtn = new ButtonBuilder().setCustomId(`accept_${order.id}`).setLabel('âœ… Confirm Order').setStyle(ButtonStyle.Success);
-    const rejectBtn = new ButtonBuilder().setCustomId(`reject_${order.id}`).setLabel('âŒ Reject Order').setStyle(ButtonStyle.Danger);
+    const acceptBtn = new ButtonBuilder().setCustomId(`accept_${order.id}`).setLabel('Confirm Order').setStyle(ButtonStyle.Success);
+    const rejectBtn = new ButtonBuilder().setCustomId(`reject_${order.id}`).setLabel('Reject Order').setStyle(ButtonStyle.Danger);
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(acceptBtn, rejectBtn);
 
     await channel.send({
-      content: `@here ðŸŽŸï¸ **New Order Placed!** You can chat with the customer below.\n*Type \`!close\` to close the ticket.*`,
+      content: `@here  **New Order Placed!** You can chat with the customer below.\n*Type \`!close\` to close the ticket.*`,
       embeds: [embed],
       components: order.status === 'PENDING' ? [row] : []
     });
@@ -288,6 +335,14 @@ client.on('messageCreate', async (message) => {
       state.logChannelId = message.channel.id;
       saveState();
       await message.reply('✅ This channel is now set for Logs (like deleted chats).');
+      return;
+    }
+
+    if (message.content.startsWith('!setbackup')) {
+      if (!message.member?.permissions.has('Administrator')) return;
+      state.backupChannelId = message.channel.id;
+      saveState();
+      await message.reply('Backup channel saved for archived tickets.');
       return;
     }
 
@@ -706,7 +761,7 @@ async function pollDatabase() {
           try {
             const source = order.confirmationSource === 'DISCORD' ? 'Discord Staff' : 'Website Admin';
             await channel.send(`🔒 **Order ${order.status} by ${source}**. This ticket will be deleted in 10 seconds...`);
-            setTimeout(() => channel.delete().catch(() => { }), 10000);
+            await archiveResolvedOrder(guild, order).catch(() => {});
           } catch (e) { }
         }
       }
