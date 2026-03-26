@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Users, Search, ShieldAlert, Loader2, Ban, UserCheck, Trash2 } from "lucide-react"
 import AddUserModal from "./add-user-modal"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 
 export default function UsersClient({ initialUsers, currentUser }: { initialUsers: any[], currentUser: any }) {
     const [users, setUsers] = useState(initialUsers)
@@ -14,6 +15,9 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
     const [activeTab, setActiveTab] = useState<'active' | 'blocked'>('active')
     const [pendingRoles, setPendingRoles] = useState<Record<string, string>>({})
     const router = useRouter()
+    const { update } = useSession()
+    const canAssignOwner = currentUser.role === "OWNER" || currentUser.role === "DEV"
+    const adminRoles = ["DEV", "OWNER", "MANAGER", "SELLER", "SUPPORT"]
 
     const handleRoleChange = (userId: string, newRole: string) => {
         setPendingRoles(prev => ({ ...prev, [userId]: newRole }))
@@ -45,6 +49,22 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
                 const newPending = { ...pendingRoles }
                 delete newPending[userId]
                 setPendingRoles(newPending)
+
+                if (isSelf) {
+                    const syncRes = await fetch("/api/auth/sync", { cache: "no-store" })
+                    const syncData = await syncRes.json().catch(() => null)
+
+                    if (syncData?.authenticated) {
+                        await update({ role: syncData.role, isBlocked: syncData.isBlocked })
+                    }
+
+                    const nextRole = syncData?.role || newRole
+                    if (!adminRoles.includes(nextRole)) {
+                        router.replace("/dashboard")
+                        router.refresh()
+                        return
+                    }
+                }
                 
                 router.refresh()
             } else {
@@ -216,7 +236,7 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
                                             <option value="SUPPORT">SUPPORT</option>
                                             <option value="SELLER">SELLER</option>
                                             <option value="MANAGER">MANAGER</option>
-                                            <option value="OWNER">OWNER</option>
+                                            {canAssignOwner && <option value="OWNER">OWNER</option>}
                                         </select>
 
                                         {user.id !== currentUser.id && (

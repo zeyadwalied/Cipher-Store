@@ -1,13 +1,13 @@
 import prisma from "@/lib/prisma"
-import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import UsersClient from "./users-client"
+import { getVerifiedUser } from "@/lib/admin-check"
 
 export const dynamic = "force-dynamic"
 
 export default async function AdminUsersPage() {
-  const session = await auth()
-  if (!session || session.user.role !== "OWNER") {
+  const currentUser = await getVerifiedUser(["OWNER"])
+  if (!currentUser) {
     redirect("/admin/products")
   }
 
@@ -15,5 +15,5 @@ export default async function AdminUsersPage() {
     orderBy: { createdAt: "desc" }
   })
 
-  return <UsersClient initialUsers={users} currentUser={session.user} />
+  return <UsersClient initialUsers={users} currentUser={currentUser} />
 }

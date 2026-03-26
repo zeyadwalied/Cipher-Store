@@ -2,6 +2,8 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ShieldAlert, LayoutDashboard, PackageSearch, Users, ShoppingCart, LogOut, MessageSquare, Database, Tag } from "lucide-react"
+import prisma from "@/lib/prisma"
+import { isProtectedUser } from "@/lib/protected-user"
 
 export default async function AdminLayout({
   children,
@@ -11,11 +13,22 @@ export default async function AdminLayout({
   const session = await auth()
 
   const allowedRoles = ["DEV", "OWNER", "MANAGER", "SELLER", "SUPPORT"]
-  if (!session || !allowedRoles.includes(session.user.role)) {
+  if (!session?.user?.id) {
     redirect("/")
   }
 
-  const role = session.user.role
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true, isBlocked: true, email: true }
+  })
+
+  const resolvedRole = isProtectedUser(session.user.email || dbUser?.email) ? "OWNER" : dbUser?.role
+
+  if (!dbUser || dbUser.isBlocked || !resolvedRole || !allowedRoles.includes(resolvedRole)) {
+    redirect("/")
+  }
+
+  const role = resolvedRole
 
   return (
     <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[#09090b]">

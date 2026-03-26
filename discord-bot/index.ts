@@ -168,14 +168,40 @@ async function archiveResolvedOrder(guild: any, order: any) {
   const channel = guild.channels.cache.get(order.discordChannelId) as TextChannel | undefined;
   const backupChannel = await resolveBackupChannel(guild);
   const source = order.confirmationSource === 'DISCORD' ? 'Discord Staff' : 'Website Admin';
-  const archiveMessage = `Archived order ${order.id} (${order.status}) by ${source}. ${channel ? `Ticket: <#${channel.id}>` : ''}`.trim();
+  const header = [
+    'Ticket Archive',
+    `Order ID: ${order.id}`,
+    `Status: ${order.status}`,
+    `Source: ${source}`,
+    `Channel: ${channel?.name || 'unknown-ticket'}`
+  ].join('\n');
 
   if (backupChannel) {
-    await backupChannel.send(archiveMessage).catch(() => {});
+    await backupChannel.send(`\`\`\`txt\n${header}\n\`\`\``).catch(() => {});
+
+    if (channel) {
+      const fetchedMessages = await channel.messages.fetch({ limit: 100 }).catch(() => null);
+      const transcript = fetchedMessages
+        ? [...fetchedMessages.values()]
+            .reverse()
+            .map((message) => {
+              const timestamp = new Date(message.createdTimestamp).toISOString();
+              const author = message.author?.tag || 'Unknown';
+              const content = message.content?.trim() || '[attachment or embed]';
+              return `[${timestamp}] ${author}: ${content}`;
+            })
+            .join('\n')
+        : 'No transcript available.';
+
+      const transcriptChunks = transcript.match(/[\s\S]{1,1800}/g) || [];
+      for (const chunk of transcriptChunks) {
+        await backupChannel.send(`\`\`\`txt\n${chunk}\n\`\`\``).catch(() => {});
+      }
+    }
   }
 
   if (channel) {
-    await channel.send(`Archive Notice: Order ${order.status} by ${source}. This ticket was archived to #ticket-backup and will remain available.`).catch(() => {});
+    await channel.send(`Archive Notice: Order ${order.status} by ${source}. A full transcript was sent to ticket-backup and this ticket will remain available.`).catch(() => {});
   }
 }
 
