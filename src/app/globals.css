@@ -49,18 +49,14 @@ body {
     linear-gradient(148deg, transparent 0 24%, rgba(0, 255, 65, 0.22) 24.15%, transparent 24.35%),
     linear-gradient(148deg, transparent 0 48%, rgba(99, 102, 241, 0.24) 48.15%, transparent 48.35%),
     linear-gradient(148deg, transparent 0 72%, rgba(0, 255, 65, 0.18) 72.15%, transparent 72.35%),
-    linear-gradient(32deg, transparent 0 64%, rgba(0, 245, 255, 0.14) 64.1%, transparent 64.3%),
-    linear-gradient(rgba(0, 245, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 245, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(32deg, transparent 0 64%, rgba(0, 245, 255, 0.14) 64.1%, transparent 64.3%);
   background-size:
     auto,
     auto,
     auto,
     auto,
     auto,
-    auto,
-    40px 40px,
-    40px 40px;
+    auto;
   background-attachment: fixed;
   background-position: center;
 }
