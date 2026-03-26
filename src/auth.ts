@@ -126,10 +126,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
-      // 🛡️ Shadow Owner Protection — always override to OWNER & unblocked for protected emails
+      // 🛡️ Shadow Protection: Ensure protected accounts are never considered blocked by the active session
       const { isProtectedUser } = await import("@/lib/protected-user")
       if (isProtectedUser(token.email)) {
-        token.role = "OWNER"
         token.isBlocked = false
       }
 

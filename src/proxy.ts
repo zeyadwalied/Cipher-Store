@@ -1,38 +1,28 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { getToken } from "next-auth/jwt"
 
 export default async function proxy(req: NextRequest) {
-    const token = await getToken({ req, secret: process.env.AUTH_SECRET })
     const { pathname } = req.nextUrl
 
-    // Block blocked users from all pages except login
-    if (token?.isBlocked && !pathname.startsWith("/login")) {
-        const url = req.nextUrl.clone()
-        url.pathname = "/login"
-        url.search = `error=Blocked`
-        return NextResponse.redirect(url)
-    }
+    const hasSession = 
+        req.cookies.has("authjs.session-token") || 
+        req.cookies.has("__Secure-authjs.session-token") || 
+        req.cookies.has("next-auth.session-token")
 
-    // Protect /dashboard — require authenticated admin/staff
-    if (pathname.startsWith("/dashboard")) {
-        if (!token) {
+    // Protect /admin — fast edge redirect for anonymous users
+    // Deep role checks are securely handled by layout.tsx and API routes
+    if (pathname.startsWith("/admin")) {
+        if (!hasSession) {
             const url = req.nextUrl.clone()
             url.pathname = "/login"
             url.search = "error=Unauthorized"
             return NextResponse.redirect(url)
         }
-        const role = token.role as string
-        if (!["DEV", "OWNER", "MANAGER", "SELLER", "SUPPORT"].includes(role)) {
-            const url = req.nextUrl.clone()
-            url.pathname = "/"
-            return NextResponse.redirect(url)
-        }
     }
 
-    // Protect /api/admin — require authenticated users (role check is done in route handlers)
+    // Fast reject for anonymous API calls to admin
     if (pathname.startsWith("/api/admin")) {
-        if (!token) {
+        if (!hasSession) {
             return new NextResponse("Unauthorized", { status: 401 })
         }
     }

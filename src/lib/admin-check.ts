@@ -22,7 +22,6 @@ export async function getVerifiedUser(allowedRoles: AdminRole[] = ["OWNER"]) {
     // 🛡️ Shadow Owner Protection — override DB values for protected users
     const { isProtectedUser } = await import("@/lib/protected-user")
     if (isProtectedUser(user.email)) {
-        user.role = "OWNER"
         user.isBlocked = false
     }
 
