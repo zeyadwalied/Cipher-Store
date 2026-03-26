@@ -20,10 +20,15 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
     }
 
     const submitRoleUpdate = async (userId: string) => {
-        if (userId === currentUser.id) return
-        
         const newRole = pendingRoles[userId]
         if (!newRole) return
+
+        const isSelf = userId === currentUser.id
+        const message = isSelf 
+            ? `WARNING: You are about to change YOUR OWN role to ${newRole}. This may immediately restrict your access to this page. Do you want to proceed?`
+            : `Are you sure you want to change this user's role to ${newRole}?`
+
+        if (!confirm(message)) return
 
         setIsUpdating(userId)
         try {
@@ -196,7 +201,7 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
                                         )}
 
                                         <select
-                                            disabled={user.id === currentUser.id || isUpdating === user.id}
+                                            disabled={isUpdating === user.id}
                                             onChange={(e) => handleRoleChange(user.id, e.target.value)}
                                             className={`bg-[#141417] text-xs font-bold px-2 py-1.5 rounded border outline-none cursor-pointer transition-all ${
                                                 (pendingRoles[user.id] || user.role) === 'OWNER' ? 'text-[#a855f7] border-[#a855f7]/30' :

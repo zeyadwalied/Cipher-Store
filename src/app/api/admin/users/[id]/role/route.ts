@@ -28,9 +28,8 @@ export async function PUT(
         const { role } = await req.json()
         const userId = id
 
-        if (userId === session.user.id) {
-            return new NextResponse("Cannot change own role", { status: 400 })
-        }
+        // Optional: Owners can now change their own role to test downgrade flows
+
 
         const targetUser = await prisma.user.findUnique({
             where: { id: userId },
