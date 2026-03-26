@@ -79,7 +79,7 @@ export default async function RootLayout({
           `}} />
         )}
       </head>
-      <body className="antialiased min-h-screen flex flex-col pt-16 scanlines cyber-body" suppressHydrationWarning>
+      <body className="antialiased min-h-screen flex flex-col pt-16 scanlines" suppressHydrationWarning>
         <NextTopLoader color="#00f5ff" showSpinner={false} shadow="0 0 10px #00f5ff,0 0 5px #00f5ff" />
         {/* ─── CYBER LOADER (Server-rendered, appears BEFORE anything else) ─── */}
         <div
