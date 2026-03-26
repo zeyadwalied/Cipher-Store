@@ -51,14 +51,21 @@ body {
     linear-gradient(148deg, transparent 0 72%, rgba(0, 255, 65, 0.18) 72.15%, transparent 72.35%),
     linear-gradient(32deg, transparent 0 64%, rgba(0, 245, 255, 0.14) 64.1%, transparent 64.3%);
   background-size:
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    auto;
-  background-attachment: fixed;
-  background-position: center;
+    1200px 720px,
+    1200px 720px,
+    100% 820px,
+    100% 920px,
+    100% 1020px,
+    100% 860px;
+  background-repeat: no-repeat;
+  background-position:
+    top 0 left 0,
+    top 0 right 0,
+    top center,
+    top center,
+    top center,
+    top center;
+  background-attachment: scroll;
 }
 
 /* ─── CYBER GRID BACKGROUND ─── */
