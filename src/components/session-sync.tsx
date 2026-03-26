@@ -13,8 +13,11 @@ export default function SessionSync() {
 
     useEffect(() => {
         if (status !== "authenticated" || !session?.user) return
+        
+        let isUpdating = false;
 
         const checkSync = async () => {
+            if (isUpdating) return;
             try {
                 const res = await fetch("/api/auth/sync")
                 if (res.ok) {
@@ -34,6 +37,7 @@ export default function SessionSync() {
 
                     // Check for role mismatch with current SESSION for internal auth update
                     if (data.role !== (session.user as any).role) {
+                        isUpdating = true;
                         await update()
                         
                         // ONLY force a hard redirect if the user is currently on an admin page
@@ -42,6 +46,8 @@ export default function SessionSync() {
                             window.location.href = "/" 
                             return
                         }
+                        
+                        setTimeout(() => { isUpdating = false; }, 2000);
                     }
                 }
             } catch (e) {
@@ -56,7 +62,8 @@ export default function SessionSync() {
         checkSync()
 
         return () => clearInterval(interval)
-    }, [session, status, router, pathname, update])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     return null
 }
