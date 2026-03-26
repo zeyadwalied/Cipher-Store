@@ -3,10 +3,23 @@
 import { use, useEffect, useState, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { MessageSquare, Send, ArrowLeft, LifeBuoy, Package, User, Repeat, ShieldAlert, Loader2, ChevronDown } from "lucide-react"
+import { MessageSquare, Send, ArrowLeft, LifeBuoy, Package, User, Repeat, ShieldAlert, Loader2, ChevronDown, ReceiptText, Phone, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import StaffSelect from "@/components/admin/staff-select"
 import { CyberBackgroundBranches } from "@/components/CyberBackgroundBranches"
+
+function parseReceiptMessage(content: string) {
+  const match = content.match(/^🧾\s+\*\*Buyer uploaded Payment Receipt\*\*\s*\nPhone:\s*([\s\S]+?)\s*\n\[View Receipt\]\((https?:\/\/[\s\S]+)\)$/)
+
+  if (!match) {
+    return null
+  }
+
+  return {
+    phone: match[1].trim(),
+    imageUrl: match[2].trim(),
+  }
+}
 
 export default function ChatWindow({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -305,8 +318,9 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
             }
 
             // For the sender name: staff/admin messages = "Cipher Store", customer = actual name
-            const isStaffMsg = msg.senderId !== chat.buyerId;
+            const isStaffMsg = msg.senderId !== chat.buyerId
             const senderName = isStaffMsg ? "Cipher Store" : (msg.sender?.name || chat.buyer?.name || "Customer")
+            const receipt = parseReceiptMessage(msg.content)
 
             return (
               <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
@@ -321,7 +335,41 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
                     <span className={`text-[10px] uppercase tracking-wider mb-1 font-bold ${isMe ? 'text-purple-200 text-right' : 'text-gray-400 text-right'}`} dir="rtl">
                       {senderName}
                     </span>
-                    <span dir="rtl">{msg.content}</span>
+                    {receipt ? (
+                      <div className={`mt-1 rounded-2xl border p-3 ${isMe ? 'border-white/15 bg-white/10' : 'border-[#27272a] bg-[#09090b]'}`}>
+                        <div className={`mb-3 flex items-center gap-2 text-xs font-bold ${isMe ? 'text-purple-100' : 'text-emerald-300'}`}>
+                          <ReceiptText className="h-4 w-4" />
+                          Payment Receipt
+                        </div>
+                        <div className={`mb-3 flex items-center gap-2 text-xs ${isMe ? 'text-purple-100/90' : 'text-gray-300'}`}>
+                          <Phone className="h-3.5 w-3.5" />
+                          <span dir="ltr">{receipt.phone}</span>
+                        </div>
+                        <a
+                          href={receipt.imageUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group block overflow-hidden rounded-2xl border border-white/10"
+                        >
+                          <img
+                            src={receipt.imageUrl}
+                            alt="Payment receipt"
+                            className="max-h-[320px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                          />
+                        </a>
+                        <a
+                          href={receipt.imageUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${isMe ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15'}`}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          View Full Receipt
+                        </a>
+                      </div>
+                    ) : (
+                      <span dir="rtl">{msg.content}</span>
+                    )}
                     <div className={`text-[10px] mt-2 ${isMe ? 'text-purple-200 text-left' : 'text-gray-500 text-left'}`}>
                       {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>

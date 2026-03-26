@@ -2,8 +2,18 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { MessageSquare, Package, LifeBuoy } from "lucide-react"
+import { MessageSquare, Package, LifeBuoy, ReceiptText } from "lucide-react"
 import { CyberBackgroundBranches } from "@/components/CyberBackgroundBranches"
+
+function getMessagePreview(content?: string) {
+  if (!content) return ""
+
+  if (content.includes("Buyer uploaded Payment Receipt")) {
+    return "Payment receipt uploaded."
+  }
+
+  return content
+}
 
 export default function ChatListPage() {
   const [chats, setChats] = useState<any[]>([])
@@ -50,14 +60,14 @@ export default function ChatListPage() {
       opacity={0.3}
       className="min-h-screen"
     >
-      <div className="max-w-4xl mx-auto py-12 px-4 min-h-[70vh]">
-      <div className="flex justify-between items-center mb-8">
+      <div className="mx-auto min-h-[70vh] w-full max-w-5xl px-4 py-12">
+      <div className="mx-auto mb-8 flex w-full max-w-3xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-bold text-white flex items-center gap-3">
           <MessageSquare className="h-8 w-8 text-[#a855f7]" /> Your Messages
         </h1>
         <button 
           onClick={createSupportChat}
-          className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border border-yellow-500/20 font-bold py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
+          className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border border-yellow-500/20 font-bold py-2 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 self-start sm:self-auto"
         >
           <LifeBuoy className="h-5 w-5" /> Contact Support
         </button>
@@ -66,35 +76,41 @@ export default function ChatListPage() {
       {isLoading ? (
         <div className="text-center py-12 text-gray-500">Loading your chats...</div>
       ) : chats.length === 0 ? (
-        <div className="text-center py-12 bg-[#141417] border border-[#27272a] rounded-xl text-gray-400">
+        <div className="mx-auto w-full max-w-3xl text-center py-12 bg-[#141417] border border-[#27272a] rounded-xl text-gray-400">
           <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-600" />
           <p>You have no active chats.</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="mx-auto grid w-full max-w-3xl gap-4">
           {chats.map(chat => (
-            <Link key={chat.id} href={`/chat/${chat.id}`} className="block bg-[#141417] border border-[#27272a] rounded-xl p-5 hover:border-[#a855f7]/50 transition-colors">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-4">
-                  <div className={`h-12 w-12 rounded-full flex items-center justify-center ${chat.type === "SUPPORT" ? "bg-yellow-500/20 text-yellow-500" : "bg-[#a855f7]/20 text-[#a855f7]"}`}>
+            <Link key={chat.id} href={`/chat/${chat.id}`} className="block w-full rounded-2xl border border-[#27272a] bg-[#141417]/95 p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5 hover:border-[#a855f7]/50">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-4">
+                  <div className={`h-12 w-12 shrink-0 rounded-full flex items-center justify-center ${chat.type === "SUPPORT" ? "bg-yellow-500/20 text-yellow-500" : "bg-[#a855f7]/20 text-[#a855f7]"}`}>
                     {chat.type === "SUPPORT" ? <LifeBuoy /> : <Package />}
                   </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <div className="min-w-0">
+                    <h2 className="flex items-center gap-2 truncate text-lg font-bold text-white">
                        {chat.type === "SUPPORT" ? "Support Chat" : `Order #${chat.order?.id || "Unknown"}`}
                     </h2>
-                    <p className="text-sm text-gray-400">
+                    <p className="truncate text-sm text-gray-400">
                       {chat.type === "ORDER" && chat.seller ? `With: ${chat.seller.name || chat.buyer.name}` : "Cipher Store Support Team"}
                     </p>
                   </div>
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="shrink-0 text-xs text-gray-500">
                   {new Date(chat.updatedAt).toLocaleDateString()}
                 </div>
               </div>
               {chat.messages && chat.messages.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-[#27272a] text-sm text-gray-400 truncate">
-                  <span className="font-semibold text-gray-300">{chat.messages[0].senderId === chat.buyerId ? "You" : "Them"}:</span> {chat.messages[0].content}
+                <div className="mt-4 border-t border-[#27272a] pt-4 text-sm text-gray-400">
+                  <div className="flex items-center gap-2 truncate">
+                    {chat.messages[0].content?.includes("Buyer uploaded Payment Receipt") && (
+                      <ReceiptText className="h-4 w-4 shrink-0 text-emerald-400" />
+                    )}
+                    <span className="font-semibold text-gray-300">{chat.messages[0].senderId === chat.buyerId ? "You:" : "Them:"}</span>
+                    <span className="truncate">{getMessagePreview(chat.messages[0].content)}</span>
+                  </div>
                 </div>
               )}
             </Link>
