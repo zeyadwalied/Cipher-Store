@@ -349,12 +349,12 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
                           href={receipt.imageUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="group block overflow-hidden rounded-2xl border border-white/10"
+                          className="group block w-fit overflow-hidden rounded-2xl border border-white/10"
                         >
                           <img
                             src={receipt.imageUrl}
                             alt="Payment receipt"
-                            className="max-h-[320px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                            className="max-h-[180px] w-auto max-w-[220px] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                           />
                         </a>
                         <a
