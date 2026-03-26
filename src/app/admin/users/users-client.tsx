@@ -12,10 +12,19 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
     const [isBlocking, setIsBlocking] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState<'active' | 'blocked'>('active')
+    const [pendingRoles, setPendingRoles] = useState<Record<string, string>>({})
     const router = useRouter()
 
-    const handleRoleUpdate = async (userId: string, newRole: string) => {
+    const handleRoleChange = (userId: string, newRole: string) => {
+        setPendingRoles(prev => ({ ...prev, [userId]: newRole }))
+    }
+
+    const submitRoleUpdate = async (userId: string) => {
         if (userId === currentUser.id) return
+        
+        const newRole = pendingRoles[userId]
+        if (!newRole) return
+
         setIsUpdating(userId)
         try {
             const res = await fetch(`/api/admin/users/${userId}/role`, {
@@ -26,6 +35,12 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
 
             if (res.ok) {
                 setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
+                
+                // Clear pending state
+                const newPending = { ...pendingRoles }
+                delete newPending[userId]
+                setPendingRoles(newPending)
+                
                 router.refresh()
             } else {
                 alert("Failed to update role")
@@ -169,16 +184,28 @@ export default function UsersClient({ initialUsers, currentUser }: { initialUser
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end gap-3">
                                         {isUpdating === user.id && <Loader2 className="h-4 w-4 text-[#a855f7] animate-spin" />}
+                                        
+                                        {pendingRoles[user.id] && pendingRoles[user.id] !== user.role && (
+                                            <button 
+                                                onClick={() => submitRoleUpdate(user.id)}
+                                                className="bg-[#a855f7] text-white text-[10px] px-2 py-1 rounded shadow-[0_0_8px_rgba(168,85,247,0.4)] hover:bg-[#9333ea] hover:shadow-[0_0_12px_rgba(147,51,234,0.6)] font-bold transition-all disabled:opacity-50"
+                                                disabled={isUpdating === user.id}
+                                            >
+                                                Apply
+                                            </button>
+                                        )}
+
                                         <select
                                             disabled={user.id === currentUser.id || isUpdating === user.id}
-                                            onChange={(e) => handleRoleUpdate(user.id, e.target.value)}
-                                            className={`bg-[#141417] text-xs font-bold px-2 py-1.5 rounded border outline-none cursor-pointer transition-all ${user.role === 'OWNER' ? 'text-[#a855f7] border-[#a855f7]/30' :
-                                                user.role === 'MANAGER' ? 'text-blue-500 border-blue-500/30' :
-                                                    user.role === 'SELLER' ? 'text-green-500 border-green-500/30' :
-                                                        user.role === 'SUPPORT' ? 'text-yellow-500 border-yellow-500/30' :
-                                                            'text-gray-400 border-gray-600'
-                                                } disabled:opacity-50`}
-                                            value={user.role}
+                                            onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                                            className={`bg-[#141417] text-xs font-bold px-2 py-1.5 rounded border outline-none cursor-pointer transition-all ${
+                                                (pendingRoles[user.id] || user.role) === 'OWNER' ? 'text-[#a855f7] border-[#a855f7]/30' :
+                                                (pendingRoles[user.id] || user.role) === 'MANAGER' ? 'text-blue-500 border-blue-500/30' :
+                                                (pendingRoles[user.id] || user.role) === 'SELLER' ? 'text-green-500 border-green-500/30' :
+                                                (pendingRoles[user.id] || user.role) === 'SUPPORT' ? 'text-yellow-500 border-yellow-500/30' :
+                                                'text-gray-400 border-gray-600'
+                                            } disabled:opacity-50`}
+                                            value={pendingRoles[user.id] || user.role}
                                         >
                                             <option value="USER">USER</option>
                                             <option value="SUPPORT">SUPPORT</option>
