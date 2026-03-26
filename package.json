@@ -5,7 +5,7 @@
   "scripts": {
     "bot": "npx tsx discord-bot/index.ts",
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma db push && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate"
