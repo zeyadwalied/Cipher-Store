@@ -225,10 +225,17 @@ async function pollDatabase() {
     const guild = client.guilds.cache.first();
     if (!guild) return;
 
-    // 1. TICKET CREATION (SUPPORT chats only — ORDER chats get a unified ticket via Section 5)
+    // 1. TICKET CREATION (ALL CHATS: SUPPORT and ORDER)
     const newChats = await prisma.chat.findMany({
-      where: { discordChannelId: null, type: 'SUPPORT' },
-      include: { buyer: true },
+      where: { discordChannelId: null },
+      include: { 
+        buyer: true,
+        order: {
+          include: { 
+            items: { include: { product: true } } 
+          }
+        }
+      },
       take: 5 // Process max 5 at a time to prevent rate limits
     });
 
@@ -240,21 +247,57 @@ async function pollDatabase() {
       for (const chat of newChats) {
         try {
           const buyerName = chat.buyer?.name || 'guest';
-          const channelName = `ticket-${buyerName}-${chat.id.slice(-4)}`.toLowerCase().replace(/[^a-z0-9-]/g, '');
+          const prefix = chat.type === 'ORDER' ? 'order' : 'support';
+          const channelName = `${prefix}-${buyerName}-${chat.id.slice(-4)}`.toLowerCase().replace(/[^a-z0-9-]/g, '');
 
           const channel = await guild.channels.create({
             name: channelName,
             type: ChannelType.GuildText,
             parent: state.ticketCategoryId,
-            topic: `Web Ticket ID: ${chat.id} | User: ${chat.buyer?.email || 'N/A'}`
+            topic: `Web ${chat.type} ID: ${chat.id} | User: ${chat.buyer?.email || 'N/A'}`
           });
 
+          // Link channel to Chat
           await prisma.chat.update({
             where: { id: chat.id },
             data: { discordChannelId: channel.id }
           });
 
-          await channel.send(`🎟️ **New Support Ticket Created**\n**User:** ${buyerName} (${chat.buyer?.email || 'Guest'})\n**Type:** ${chat.type}\n\n*Type \`!close\` to close.*`);
+          // Also link to Order
+          if (chat.orderId) {
+            await prisma.order.update({
+              where: { id: chat.orderId },
+              data: { discordChannelId: channel.id }
+            }).catch(() => {});
+          }
+
+          if (chat.type === 'SUPPORT') {
+            await channel.send(`🎟️ **New Support Ticket**\n**User:** ${buyerName} (${chat.buyer?.email || 'Guest'})\n**Type:** ${chat.type}\n\n*Type \`!close\` to close.*`);
+          } else if (chat.type === 'ORDER' && chat.order) {
+            const order = chat.order;
+            const itemsStr = order.items.map((i: any) => `${i.quantity}x ${i.product.name}`).join('\n');
+            const embed = new EmbedBuilder()
+              .setTitle(`🛒 New Order Ticket (#${order.id})`)
+              .setColor('#00f5ff')
+              .addFields(
+                { name: 'Customer', value: `${buyerName} (${chat.buyer?.email || 'Guest'})`, inline: true },
+                { name: 'Total', value: `${order.total.toFixed(2)} EGP`, inline: true },
+                { name: 'Method', value: order.paymentMethod, inline: true },
+                { name: 'Items', value: itemsStr || 'None', inline: false }
+              )
+              .setTimestamp();
+
+            const acceptBtn = new ButtonBuilder().setCustomId(`accept_${order.id}`).setLabel('✅ Confirm Order').setStyle(ButtonStyle.Success);
+            const rejectBtn = new ButtonBuilder().setCustomId(`reject_${order.id}`).setLabel('❌ Reject Order').setStyle(ButtonStyle.Danger);
+            const row = new ActionRowBuilder<ButtonBuilder>().addComponents(acceptBtn, rejectBtn);
+
+            await channel.send({ 
+              content: `@here 🎟️ **New Order Placed!** You can chat with the customer below.\n*Type \`!close\` to close the ticket.*`, 
+              embeds: [embed], 
+              components: order.status === 'PENDING' ? [row] : [] 
+            });
+          }
+
           await sleep(1000); // Wait 1 sec between creates
         } catch (err) {
           console.error(`Failed to create channel for chat ${chat.id}:`, err);
@@ -349,102 +392,7 @@ async function pollDatabase() {
       }).catch(() => { });
     }
 
-    // 5. UNIFIED PAYMENT + CHAT TICKETS (only after receipt is uploaded)
-    if (state.ticketCategoryId) {
-      const pendingOrders = await prisma.order.findMany({
-        where: {
-          status: 'PENDING',
-          paymentMethod: { in: ['VODAFONE_CASH', 'INSTAPAY', 'VODAFONE', 'PAYPAL'] },
-          discordChannelId: null,
-          receiptImageUrl: { not: null }
-        },
-        include: { user: true, items: { include: { product: true } }, chat: true },
-        orderBy: { createdAt: 'desc' },
-        take: 5
-      });
-
-      for (const order of pendingOrders) {
-        try {
-          const buyerName = order.user?.name || 'guest';
-          const channelName = `payment-${buyerName}-${order.id.slice(-4)}`.toLowerCase().replace(/[^a-z0-9-]/g, '');
-
-          const channel = await guild.channels.create({
-            name: channelName,
-            type: ChannelType.GuildText,
-            parent: state.ticketCategoryId,
-            topic: `Payment Order #${order.id} | User: ${order.user?.email || 'N/A'} | Chat with customer here`
-          });
-
-          // Link channel to BOTH Order AND Chat (unified ticket)
-          await prisma.order.update({
-            where: { id: order.id },
-            data: { discordChannelId: channel.id }
-          });
-
-          // Also link the associated chat so messages sync to this same channel
-          if (order.chat) {
-            await prisma.chat.update({
-              where: { id: order.chat.id },
-              data: { discordChannelId: channel.id }
-            });
-          }
-
-          const itemsStr = order.items.map((i: any) => `${i.quantity}x ${i.product.name}`).join('\n');
-          const embed = new EmbedBuilder()
-            .setTitle(`🚨 Payment Confirmation Required (#${order.id})`)
-            .setColor('#00f5ff')
-            .addFields(
-              { name: 'Customer', value: `${buyerName} (${order.user?.email || 'Guest'})`, inline: true },
-              { name: 'Total', value: `${order.total.toFixed(2)} EGP`, inline: true },
-              { name: 'Method', value: order.paymentMethod, inline: true },
-              { name: 'Phone', value: order.senderPhoneNumber || 'N/A', inline: false },
-              { name: 'Items', value: itemsStr || 'None', inline: false }
-            )
-            .setTimestamp();
-
-          let attachment;
-          if (order.receiptImageUrl) {
-            if (order.receiptImageUrl.startsWith('data:')) {
-              // Base64 images can't be embedded in Discord — add a note
-              embed.addFields({ name: '📷 Receipt', value: 'Receipt image uploaded (view on website)', inline: false });
-            } else if (order.receiptImageUrl.startsWith('/uploads/')) {
-              // Local file upload - read from disk and attach so Discord can render it even on localhost
-              try {
-                const filePath = path.join(process.cwd(), 'public', order.receiptImageUrl);
-                if (fs.existsSync(filePath)) {
-                  attachment = new AttachmentBuilder(filePath, { name: 'receipt.png' });
-                  embed.setImage('attachment://receipt.png');
-                } else {
-                  // Fallback
-                  embed.addFields({ name: '📷 Receipt', value: `[View Receipt Document](${order.receiptImageUrl})`, inline: false });
-                }
-              } catch (e) {
-                console.error("Error reading receipt image:", e);
-              }
-            } else {
-              // External http URL 
-              const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cipherr-store.vercel.app';
-              const imageUrl = order.receiptImageUrl.startsWith('http')
-                ? order.receiptImageUrl
-                : `${baseUrl}${order.receiptImageUrl}`;
-              embed.setImage(imageUrl);
-            }
-          }
-
-          const acceptBtn = new ButtonBuilder().setCustomId(`accept_${order.id}`).setLabel('✅ Confirm Order').setStyle(ButtonStyle.Success);
-          const rejectBtn = new ButtonBuilder().setCustomId(`reject_${order.id}`).setLabel('❌ Reject Order').setStyle(ButtonStyle.Danger);
-          const row = new ActionRowBuilder<ButtonBuilder>().addComponents(acceptBtn, rejectBtn);
-
-          const messageOptions: any = { content: '@here 🎟️ **New Payment Ticket** — Confirm or chat with the customer below:', embeds: [embed], components: [row] };
-          if (attachment) messageOptions.files = [attachment];
-
-          await channel.send(messageOptions);
-          await sleep(1000);
-        } catch (e) {
-          console.error(`Order payment ticket fail ${order.id}`, e);
-        }
-      }
-    }
+    // 5. REMOVED (UNIFIED INTO SECTION 1)
 
     // 6. CLEANUP RESOLVED PAYMENT TICKETS
     const resolvedOrders = await prisma.order.findMany({

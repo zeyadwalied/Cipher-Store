@@ -68,6 +68,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       data: { senderPhoneNumber, receiptImageUrl } as any
     })
 
+    // Drop the receipt into the Chat so it syncs to the specific Discord Ticket
+    const chat = await prisma.chat.findFirst({ where: { orderId: id } });
+    if (chat) {
+      await prisma.message.create({
+        data: {
+          chatId: chat.id,
+          senderId: session.user.id,
+          content: `🧾 **Buyer uploaded Payment Receipt**\nPhone: ${senderPhoneNumber}\n[View Receipt](${receiptImageUrl})`,
+        }
+      });
+    }
+
     // Log the event to Discord using the standard logger
     try {
       const { sendDiscordLog } = await import("@/lib/discord");
