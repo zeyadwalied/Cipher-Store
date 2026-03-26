@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Gift, UserPlus, Gamepad2, DollarSign, X, ArrowRight, Loader2 } from "lucide-react"
+import { Gift, UserPlus, Gamepad2, DollarSign, X, Loader2 } from "lucide-react"
 
 export function SteamGameRequestModal() {
     const router = useRouter()
@@ -20,41 +20,50 @@ export function SteamGameRequestModal() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!friendCode || !gameName || !gamePrice) return
+
+        if (!friendCode.trim() || !gameName.trim() || !gamePrice.trim()) {
+            return
+        }
+
         setIsSubmitting(true)
 
         try {
-            // Create a support chat for the custom order
-            const chatRes = await fetch('/api/chats/support')
-            if (!chatRes.ok) {
-                if (chatRes.status === 401) {
-                    alert("الرجاء تسجيل الدخول أولاً لطلب الخدمة")
-                    router.push('/login')
-                    return
-                }
-                throw new Error('Failed to create chat')
-            }
-            const chat = await chatRes.json()
+            const numericPrice = Number.parseFloat(gamePrice)
+            const approxEGP = Number.isNaN(numericPrice)
+                ? "غير محدد"
+                : `${(numericPrice * 55).toFixed(2)} EGP تقريبا`
 
-            // Calculate approximate EGP cost (rough estimate for display)
-            const numericPrice = parseFloat(gamePrice)
-            const approxEGP = isNaN(numericPrice) ? 'غير محدد' : `${(numericPrice * 55).toFixed(2)} EGP تقريباً`
+            const initialMessage = [
+                "🎮 طلب شحن لعبة كـ Steam Gift",
+                "",
+                `🆔 Friend Code: \`${friendCode.trim()}\``,
+                `🎲 اسم اللعبة: ${gameName.trim()}`,
+                `💵 سعر اللعبة على ستيم: $${gamePrice.trim()} (${approxEGP})`,
+            ].join("\n")
 
-            // Send the initial order message
-            const messageContent = `🎮 **طلب شحن لعبة كـ Steam Gift:**\n\n🆔 **Friend Code:** \`${friendCode}\`\n🎲 **اسم اللعبة:** ${gameName}\n💵 **سعر اللعبة على ستيم:** $${gamePrice} (${approxEGP})`
-
-            await fetch(`/api/chats/${chat.id}/messages`, {
+            const chatRes = await fetch("/api/chats/support", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: messageContent })
+                body: JSON.stringify({ initialMessage }),
             })
 
-            // Redirect to chat to complete payment/order
+            if (!chatRes.ok) {
+                if (chatRes.status === 401) {
+                    alert("الرجاء تسجيل الدخول أولا لطلب الخدمة")
+                    router.push("/login")
+                    return
+                }
+
+                throw new Error(`Failed to create support chat: ${chatRes.status}`)
+            }
+
+            const chat = await chatRes.json()
+
+            setIsOpen(false)
             router.push(`/chat/${chat.id}`)
-            closeModal()
         } catch (error) {
             console.error(error)
-            alert("حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مرة أخرى")
+            alert("حدث خطأ أثناء تجهيز محادثة الدعم، يرجى المحاولة مرة أخرى")
         } finally {
             setIsSubmitting(false)
         }
@@ -75,7 +84,6 @@ export function SteamGameRequestModal() {
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" dir="rtl">
                     <div className="relative w-full max-w-md bg-[#141417] border border-[#27272a] rounded-2xl shadow-[0_0_50px_rgba(0,245,255,0.1)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        {/* Header Glow */}
                         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#00f5ff] to-[#a855f7]" />
 
                         <div className="p-6">
@@ -93,7 +101,7 @@ export function SteamGameRequestModal() {
 
                             <div className="text-center mb-6">
                                 <p className="text-sm text-gray-400">
-                                    أدخل المعلومات ليتم حساب التكلفة وإرسالها لك.
+                                    أدخل المعلومات ليتم تجهيز محادثة مباشرة مع الدعم وإرسال طلبك لهم.
                                 </p>
                             </div>
 
@@ -146,16 +154,16 @@ export function SteamGameRequestModal() {
 
                                 <button
                                     type="submit"
-                                    disabled={isSubmitting || !friendCode || !gameName || !gamePrice}
+                                    disabled={isSubmitting || !friendCode.trim() || !gameName.trim() || !gamePrice.trim()}
                                     className="w-full bg-white hover:bg-gray-100 text-black font-bold py-4 rounded-xl transition-all disabled:opacity-50 mt-6 flex items-center justify-center gap-2"
                                 >
                                     {isSubmitting ? (
                                         <>
                                             <Loader2 className="w-5 h-5 animate-spin" />
-                                            جاري التحضير...
+                                            جاري تجهيز الشات...
                                         </>
                                     ) : (
-                                        "اذهب للدفع"
+                                        "الانتقال لمحادثة الدعم"
                                     )}
                                 </button>
                             </form>

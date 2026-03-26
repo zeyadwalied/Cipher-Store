@@ -31,9 +31,9 @@ export default async function AdminLayout({
   const role = resolvedRole
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[#09090b]">
+    <div className="flex min-h-[calc(100vh-64px)] bg-[#09090b]">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-[#27272a] bg-[#141417] flex flex-col hidden md:flex">
+      <aside className="sticky top-16 hidden h-[calc(100vh-64px)] w-64 border-r border-[#27272a] bg-[#141417] md:flex md:flex-col">
         <div className="p-6 border-b border-[#27272a]">
           <Link href="/" className="flex items-center gap-0 text-xl font-bold tracking-tighter text-white">
             <img
@@ -115,7 +115,7 @@ export default async function AdminLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-[#09090b] p-8">
+      <main className="min-w-0 flex-1 bg-[#09090b] p-8">
         {children}
       </main>
     </div>

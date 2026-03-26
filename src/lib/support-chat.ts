@@ -23,6 +23,16 @@ export async function getOrCreateOngoingSupportChat(options: SupportChatOptions)
     })
 
     if (existing) {
+      if (options.initialMessage) {
+        await tx.message.create({
+          data: {
+            chatId: existing.id,
+            senderId: options.initialMessage.senderId,
+            content: options.initialMessage.content,
+          },
+        })
+      }
+
       return { chatId: existing.id, created: false }
     }
 
