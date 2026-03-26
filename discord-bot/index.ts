@@ -15,6 +15,7 @@ const client = new Client({
 });
 
 const TOKEN = process.env.DISCORD_TOKEN || "YOUR_DISCORD_TOKEN_HERE";
+const ENV_TICKET_CATEGORY_ID = process.env.DISCORD_TICKET_CATEGORY_ID || null;
 
 const CONFIG_FILE = path.join(__dirname, 'bot-config.json');
 
@@ -36,6 +37,10 @@ try {
   console.log("No config file found, starting fresh.");
 }
 
+if (!state.ticketCategoryId && ENV_TICKET_CATEGORY_ID) {
+  state.ticketCategoryId = ENV_TICKET_CATEGORY_ID;
+}
+
 function saveState() {
   // keep sets small
   if (state.processedOrders.length > 300) state.processedOrders = state.processedOrders.slice(-300);
@@ -44,6 +49,46 @@ function saveState() {
 }
 
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+async function resolveTicketCategoryId(guild: any) {
+  const preferredIds = [state.ticketCategoryId, ENV_TICKET_CATEGORY_ID].filter(Boolean) as string[];
+
+  for (const id of preferredIds) {
+    const channel = await guild.channels.fetch(id).catch(() => null);
+    if (channel?.type === ChannelType.GuildCategory) {
+      if (state.ticketCategoryId !== channel.id) {
+        state.ticketCategoryId = channel.id;
+        saveState();
+      }
+      return channel.id;
+    }
+  }
+
+  const channels = await guild.channels.fetch();
+  const fallback = channels.find((channel: any) =>
+    channel?.type === ChannelType.GuildCategory &&
+    channel.name?.toLowerCase().includes("ticket")
+  );
+
+  if (fallback) {
+    state.ticketCategoryId = fallback.id;
+    saveState();
+    return fallback.id;
+  }
+
+  const createdCategory = await guild.channels.create({
+    name: "Tickets",
+    type: ChannelType.GuildCategory,
+  }).catch(() => null);
+
+  if (createdCategory?.id) {
+    state.ticketCategoryId = createdCategory.id;
+    saveState();
+    return createdCategory.id;
+  }
+
+  return null;
+}
 
 client.on('ready', async () => {
   console.log(`🤖 Discord Bot Logged in as ${client.user?.tag}!`);
@@ -241,11 +286,13 @@ async function pollDatabase() {
       take: 5 // Process max 5 at a time to prevent rate limits
     });
 
-    if (newChats.length > 0 && !state.ticketCategoryId) {
+    const ticketCategoryId = await resolveTicketCategoryId(guild);
+
+    if (newChats.length > 0 && !ticketCategoryId) {
       console.warn(`[WARN] ⚠️ No ticket category! Run !setup tickets. Missing ${newChats.length} chats.`);
     }
 
-    if (newChats.length > 0 && state.ticketCategoryId) {
+    if (newChats.length > 0 && ticketCategoryId) {
       for (const chat of newChats) {
         try {
           const buyerName = chat.buyer?.name || 'guest';
@@ -255,7 +302,7 @@ async function pollDatabase() {
           const channel = await guild.channels.create({
             name: channelName,
             type: ChannelType.GuildText,
-            parent: state.ticketCategoryId,
+            parent: ticketCategoryId,
             topic: `Web ${chat.type} ID: ${chat.id} | User: ${chat.buyer?.email || 'N/A'}`
           });
 

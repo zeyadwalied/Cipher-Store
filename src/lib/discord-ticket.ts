@@ -31,6 +31,37 @@ async function discordAPI(endpoint: string, method: string, body?: any) {
   return res.json();
 }
 
+async function resolveTicketCategoryId(guildId: string, preferredCategoryId?: string | null) {
+  const channels = await discordAPI(`/guilds/${guildId}/channels`, "GET");
+  if (!Array.isArray(channels)) {
+    const created = await discordAPI(`/guilds/${guildId}/channels`, "POST", {
+      name: "Tickets",
+      type: 4,
+    });
+    return created?.id || preferredCategoryId || null;
+  }
+
+  if (preferredCategoryId) {
+    const preferred = channels.find((channel: any) =>
+      channel?.id === preferredCategoryId && channel?.type === 4
+    );
+    if (preferred?.id) return preferred.id;
+  }
+
+  const fallback = channels.find((channel: any) =>
+    channel?.type === 4 && String(channel?.name || "").toLowerCase().includes("ticket")
+  );
+
+  if (fallback?.id) return fallback.id;
+
+  const created = await discordAPI(`/guilds/${guildId}/channels`, "POST", {
+    name: "Tickets",
+    type: 4,
+  });
+
+  return created?.id || null;
+}
+
 interface OrderTicketData {
   orderId: string;
   customerName: string;
@@ -48,12 +79,18 @@ export async function createOrderTicket(data: OrderTicketData): Promise<string |
   const guildId = process.env.DISCORD_GUILD_ID;
   const categoryId = process.env.DISCORD_TICKET_CATEGORY_ID;
 
-  if (!guildId || !categoryId) {
+  if (!guildId) {
     console.error("Missing DISCORD_GUILD_ID or DISCORD_TICKET_CATEGORY_ID");
     return null;
   }
 
   try {
+    const resolvedCategoryId = await resolveTicketCategoryId(guildId, categoryId);
+    if (!resolvedCategoryId) {
+      console.error("Could not resolve a valid Discord ticket category");
+      return null;
+    }
+
     const safeName = data.customerName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'customer';
     const channelName = `order-${safeName}-${data.orderId.slice(-4)}`;
 
@@ -61,7 +98,7 @@ export async function createOrderTicket(data: OrderTicketData): Promise<string |
     const channel = await discordAPI(`/guilds/${guildId}/channels`, "POST", {
       name: channelName,
       type: 0, // GUILD_TEXT
-      parent_id: categoryId,
+      parent_id: resolvedCategoryId,
       topic: `Order #${data.orderId} | Customer: ${data.customerEmail}`,
     });
 
