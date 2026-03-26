@@ -60,9 +60,15 @@ export default async function RootLayout({
   const session = await auth();
   const showDevTools = session?.user?.role === "OWNER";
   
-  // Fetch Maintenance Mode
-  const settings = await prisma.siteSettings.findUnique({ where: { id: "global" } });
-  const isMaintenanceMode = settings?.isMaintenanceMode || false;
+  // Fetch Maintenance Mode safely
+  let isMaintenanceMode = false;
+  try {
+    const settings = await prisma.siteSettings.findUnique({ where: { id: "global" } });
+    isMaintenanceMode = settings?.isMaintenanceMode || false;
+  } catch (err) {
+    console.error("Maintenance check failed:", err);
+  }
+  
   const isLockedOut = isMaintenanceMode && !showDevTools;
 
   return (
