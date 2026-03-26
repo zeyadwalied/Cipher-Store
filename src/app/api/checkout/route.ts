@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
 import { isSiteInMaintenanceMode } from "@/lib/maintenance"
-import { triggerBotSync } from "@/lib/bot-sync"
+import { createOrderTicket } from "@/lib/discord-ticket"
 import { calculateDiscount } from "@/lib/discountEngine"
 import { sendDiscordLog } from "@/lib/discord"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
@@ -166,8 +166,35 @@ export async function POST(req: Request) {
       redirectUrl = `/checkout/payment/${result.order.id}`
     }
 
-    // Instantly wake up the Discord bot to create the ticket
-    await triggerBotSync()
+    // Create Discord ticket channel INSTANTLY via REST API (no bot polling needed!)
+    try {
+      // Get product names for the embed
+      const orderWithItems = await prisma.order.findUnique({
+        where: { id: result.order.id },
+        include: { items: { include: { product: { select: { name: true } } } } }
+      });
+      const ticketItems = orderWithItems?.items.map(i => ({
+        name: i.product.name,
+        quantity: i.quantity
+      })) || [];
+
+      const channelId = await createOrderTicket({
+        orderId: result.order.id,
+        customerName: session.user.name || 'Customer',
+        customerEmail: session.user.email || 'Unknown',
+        total: result.order.total,
+        paymentMethod: paymentMethod || 'VODAFONE_CASH',
+        items: ticketItems,
+      });
+
+      // Save the channel ID to both Order and Chat so bot can manage it later
+      if (channelId) {
+        await prisma.order.update({ where: { id: result.order.id }, data: { discordChannelId: channelId } });
+        await prisma.chat.update({ where: { id: result.chat.id }, data: { discordChannelId: channelId } });
+      }
+    } catch (ticketErr) {
+      console.error('Discord ticket creation failed (non-blocking):', ticketErr);
+    }
 
     // Log the order to Discord
     try {
