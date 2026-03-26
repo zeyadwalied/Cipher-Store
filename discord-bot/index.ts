@@ -272,9 +272,12 @@ async function pollDatabase() {
     const guild = client.guilds.cache.first();
     if (!guild) return;
 
-    // 1. TICKET CREATION (ALL CHATS: SUPPORT and ORDER)
+    // 1. TICKET CREATION (SUPPORT only - ORDER tickets are created directly by the website)
     const newChats = await prisma.chat.findMany({
-      where: { discordChannelId: null },
+      where: {
+        type: 'SUPPORT',
+        discordChannelId: null
+      },
       include: { 
         buyer: true,
         order: {
@@ -296,8 +299,7 @@ async function pollDatabase() {
       for (const chat of newChats) {
         try {
           const buyerName = chat.buyer?.name || 'guest';
-          const prefix = chat.type === 'ORDER' ? 'order' : 'support';
-          const channelName = `${prefix}-${buyerName}-${chat.id.slice(-4)}`.toLowerCase().replace(/[^a-z0-9-]/g, '');
+          const channelName = `support-${buyerName}-${chat.id.slice(-4)}`.toLowerCase().replace(/[^a-z0-9-]/g, '');
 
           const channel = await guild.channels.create({
             name: channelName,
