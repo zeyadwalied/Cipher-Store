@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
 import nodemailer from "nodemailer"
 import { sendDiscordLog } from "@/lib/discord"
+import { triggerBotSync } from "@/lib/bot-sync"
 
 // Helper to configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -231,6 +232,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         console.error("Failed to send email out:", mailError)
       }
     }
+
+    await triggerBotSync();
 
     return NextResponse.json({ success: true, status })
   } catch (error) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
+import { triggerBotSync } from "@/lib/bot-sync"
 
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -107,6 +108,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       where: { id },
       data: { updatedAt: new Date() }
     })
+
+    // Wake up Discord Bot instantly
+    await triggerBotSync();
 
     return NextResponse.json(message)
   } catch (error) {

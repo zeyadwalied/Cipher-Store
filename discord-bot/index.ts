@@ -3,6 +3,7 @@ import prisma from '../src/lib/prisma';
 import fs from 'fs';
 import path from 'path';
 import "dotenv/config";
+import { Client as PgClient } from 'pg'; // <-- ADDED FOR INSTANT REALTIME SYNC
 
 const client = new Client({
   intents: [
@@ -44,9 +45,29 @@ function saveState() {
 
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
-client.on('ready', () => {
+client.on('ready', async () => {
   console.log(`🤖 Discord Bot Logged in as ${client.user?.tag}!`);
-  setInterval(pollDatabase, 5000); // 5 seconds instead of 3 to avoid rate limits
+  
+  // 1. Keep a relaxed backup polling loop just in case a notification drops
+  setInterval(pollDatabase, 60000); // Changed from 5000ms (17k queries/day) to 60000ms!
+
+  // 2. Postgres LISTEN/NOTIFY -> The Magic!
+  try {
+    const pgClient = new PgClient({ connectionString: process.env.DATABASE_URL });
+    await pgClient.connect();
+    
+    pgClient.on('notification', (msg: any) => {
+      if (msg.channel === 'bot_sync') {
+        // Trigger poll instantly when the website says a new item exists!
+        pollDatabase();
+      }
+    });
+
+    await pgClient.query('LISTEN bot_sync');
+    console.log("⚡ Bot is now LISTENING for instant Postgres realtime events! (NO MORE SPAM POLLING)");
+  } catch (err) {
+    console.error("Failed to setup PG Listen (fallback polling will still run):", err);
+  }
 });
 
 // COMMANDS & DISCORD->WEB MESSAGE SYNC

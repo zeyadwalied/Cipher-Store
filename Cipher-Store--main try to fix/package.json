@@ -1,0 +1,60 @@
+{
+  "name": "nb",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "bot": "npx tsx discord-bot/index.ts",
+    "dev": "next dev",
+    "build": "prisma db push && prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.11.1",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@google/generative-ai": "^0.24.1",
+    "@hookform/resolvers": "^5.2.2",
+    "@prisma/client": "^5.22.0",
+    "@stripe/stripe-js": "^8.9.0",
+    "@types/bcrypt": "^6.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/nodemailer": "^7.0.11",
+    "@vercel/speed-insights": "^2.0.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.3.1",
+    "framer-motion": "^12.36.0",
+    "lucide-react": "^0.577.0",
+    "next": "16.1.6",
+    "next-auth": "^5.0.0-beta.30",
+    "nextjs-toploader": "^3.9.17",
+    "nodemailer": "^7.0.7",
+    "prisma": "^5.22.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-hook-form": "^7.71.2",
+    "stripe": "^20.4.1",
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.3.6",
+    "zustand": "^5.0.11"
+  },
+  "overrides": {
+    "nodemailer": "^7.0.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "pg": "^8.20.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
