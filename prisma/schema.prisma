@@ -26,8 +26,6 @@ model User {
   assignedChats Chat[]    @relation("AssignedChats")
   messages      Message[]
   reviews       Review[]
-
-  @@index([role])
 }
 
 model Category {
@@ -89,8 +87,6 @@ model Order {
   updatedAt     DateTime    @updatedAt
   items         OrderItem[]
   chat          Chat?
-
-  @@index([status, discordChannelId])
 }
 
 model OrderItem {
@@ -132,10 +128,6 @@ model Chat {
   messages     Message[]
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-
-  @@index([type, discordChannelId])
-  @@index([status, discordChannelId])
-  @@index([buyerId])
 }
 
 model Message {
@@ -148,9 +140,6 @@ model Message {
   isAi      Boolean  @default(false)
   discordMessageId String?
   createdAt DateTime @default(now())
-
-  @@index([chatId, createdAt])
-  @@index([discordMessageId])
 }
 
 model Review {
