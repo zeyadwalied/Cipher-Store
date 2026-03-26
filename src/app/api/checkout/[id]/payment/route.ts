@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
+import { triggerBotSync } from "@/lib/bot-sync"
+import { isSiteInMaintenanceMode } from "@/lib/maintenance"
 
 const PAYMENT_WEBHOOK_URL = "https://discord.com/api/webhooks/1485459046541820017/qI8gsSHFQJ0e4YR4IPtoYyMVFDKxEGVE0748avgqSR2NAFk-KnLpzK-sk9BkuN_FTCEG"
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -8,6 +10,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const { id } = await params
     const session = await auth()
     if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
+
+    if (await isSiteInMaintenanceMode() && session.user.role !== "OWNER") {
+      return new NextResponse("System under maintenance", { status: 503 })
+    }
 
     // Verify order ownership
     const order = await prisma.order.findUnique({ where: { id } })
@@ -78,6 +84,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         }
       })
     } catch (e) { }
+
+    // Wake up Discord Bot instantly
+    await triggerBotSync();
 
     return NextResponse.json({ success: true, receiptImageUrl })
   } catch (error: any) {

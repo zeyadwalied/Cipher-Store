@@ -20,6 +20,8 @@ import SessionSync from "@/components/session-sync";
 import { HydrationDetector } from "@/components/HydrationDetector";
 import NextTopLoader from 'nextjs-toploader';
 import { auth } from "@/auth";
+import prisma from "@/lib/prisma";
+import MaintenanceScreen from "@/components/MaintenanceScreen";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
@@ -57,6 +59,11 @@ export default async function RootLayout({
 }>) {
   const session = await auth();
   const showDevTools = session?.user?.role === "OWNER";
+  
+  // Fetch Maintenance Mode
+  const settings = await prisma.siteSettings.findUnique({ where: { id: "global" } });
+  const isMaintenanceMode = settings?.isMaintenanceMode || false;
+  const isLockedOut = isMaintenanceMode && !showDevTools;
 
   return (
     <html lang="en" className="dark">
@@ -201,10 +208,16 @@ export default async function RootLayout({
           <SessionSync />
           <Navbar />
           <main className="flex-1 flex flex-col relative w-full">
-            {children}
+            {isLockedOut ? <MaintenanceScreen /> : children}
           </main>
-          <Footer />
-          <AiChatWidget />
+          
+          {/* Hide Footer and Chat Widget during maintenance */}
+          {!isLockedOut && (
+            <>
+              <Footer />
+              <AiChatWidget />
+            </>
+          )}
         </Providers>
       </body>
     </html>

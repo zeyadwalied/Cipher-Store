@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
+import { isSiteInMaintenanceMode } from "@/lib/maintenance"
 import { calculateDiscount } from "@/lib/discountEngine"
 import { sendDiscordLog } from "@/lib/discord"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
@@ -20,6 +21,10 @@ export async function POST(req: Request) {
     const session = await auth()
     if (!session?.user) {
       return new NextResponse("Unauthorized", { status: 401 })
+    }
+
+    if (await isSiteInMaintenanceMode() && session.user.role !== "OWNER") {
+      return new NextResponse("System under maintenance", { status: 503 })
     }
 
     const { items, paymentMethod } = await req.json()

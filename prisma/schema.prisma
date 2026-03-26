@@ -196,3 +196,10 @@ model EmailVerification {
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
+model SiteSettings {
+  id                String   @id @default("global")
+  isMaintenanceMode Boolean  @default(false)
+  updatedAt         DateTime @updatedAt
+}
+

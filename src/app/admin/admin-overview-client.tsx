@@ -1,12 +1,14 @@
 "use client"
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
-import { Package, Users, ShoppingCart, DollarSign, Activity } from "lucide-react"
+import { Package, Users, ShoppingCart, DollarSign, Activity, ShieldAlert, Power } from "lucide-react"
 
 export default function AdminOverviewClient() {
   const { data: session } = useSession()
   const [stats, setStats] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false)
+  const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false)
 
   useEffect(() => {
     fetch("/api/admin/dashboard-stats")
@@ -19,7 +21,40 @@ export default function AdminOverviewClient() {
         console.error(e)
         setIsLoading(false)
       })
+
+    // Fetch Maintenance Mode strictly for UI state (OWNER only)
+    fetch("/api/admin/maintenance")
+      .then(res => {
+        if(res.ok) return res.json();
+        return { isMaintenanceMode: false };
+      })
+      .then(data => setIsMaintenanceMode(data.isMaintenanceMode))
+      .catch(console.error)
   }, [])
+
+  const toggleMaintenance = async () => {
+    if (isMaintenanceMode) {
+      if (!confirm("Are you sure you want to disable Maintenance Mode and OPEN the site to the public?")) return;
+    } else {
+      if (!confirm("WARNING: This will instantly lock out ALL customers and enable Cyber Maintenance Mode. Are you sure?")) return;
+    }
+    
+    setIsTogglingMaintenance(true);
+    try {
+      const res = await fetch("/api/admin/maintenance", {
+        method: "POST",
+        body: JSON.stringify({ isMaintenanceMode: !isMaintenanceMode })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsMaintenanceMode(data.isMaintenanceMode);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsTogglingMaintenance(false);
+    }
+  }
 
   if (isLoading) {
     return <div className="animate-pulse h-96 bg-[#141417] rounded-xl border border-[#27272a]"></div>
@@ -43,6 +78,33 @@ export default function AdminOverviewClient() {
 
   return (
     <div className="max-w-6xl mx-auto">
+
+      {session?.user?.role === "OWNER" && (
+        <div className={`mb-8 p-6 rounded-xl border flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-500 ${isMaintenanceMode ? 'bg-[#ff003c]/10 border-[#ff003c]/50 shadow-[0_0_30px_rgba(255,0,60,0.15)]' : 'bg-[#141417] border-[#27272a]'}`}>
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-full ${isMaintenanceMode ? 'bg-[#ff003c]/20 text-[#ff003c] animate-pulse' : 'bg-gray-800 text-gray-400'}`}>
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <div>
+              <h2 className={`text-xl font-bold ${isMaintenanceMode ? 'text-[#ff003c]' : 'text-white'}`}>
+                {isMaintenanceMode ? 'SYSTEM LOCKED: MAINTENANCE ACTIVE' : 'System Status: Nominal'}
+              </h2>
+              <p className="text-gray-400 text-sm">
+                {isMaintenanceMode ? 'All public traffic is currently blocked. Only the OWNER can access the site.' : 'The store is currently open and accepting traffic normally.'}
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={toggleMaintenance}
+            disabled={isTogglingMaintenance}
+            className={`px-8 py-3 rounded-lg flex items-center gap-2 font-bold uppercase tracking-wider transition-all duration-300 ${isMaintenanceMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-red-600 hover:bg-red-700 text-white shadow-[0_0_20px_rgba(220,38,38,0.4)]'}`}
+          >
+            <Power className="w-5 h-5" />
+            {isTogglingMaintenance ? 'PROCESSING...' : isMaintenanceMode ? 'DISABLE MAINTENANCE' : 'ENGAGE LOCKDOWN'}
+          </button>
+        </div>
+      )}
+
       <h1 className="text-3xl font-bold text-white mb-8">
         {isOwnerOrManager ? "Platform Overview" : "Seller Dashboard"}
       </h1>
