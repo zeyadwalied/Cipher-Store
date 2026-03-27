@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
+import { optimizeImageBufferToDataUrl } from "@/lib/image-optimizer"
 
 export const dynamic = "force-dynamic"
 
-// Since Vercel has a read-only filesystem, we store images as Base64 data URLs
-// in a simple "Media" approach using the existing product image field or as standalone entries.
+// Since Vercel has a read-only filesystem, we store images as Base64 data URLs.
+// New uploads are optimized first to reduce payload size.
 
-// GET — list all uploaded images (stored in products as image field)
+// GET - list all uploaded images (stored in products as image field)
 export async function GET() {
   try {
     const session = await auth()
@@ -15,7 +16,6 @@ export async function GET() {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    // Get all products that have images
     const products = await prisma.product.findMany({
       where: { image: { not: null } },
       select: { id: true, name: true, image: true },
@@ -23,8 +23,8 @@ export async function GET() {
     })
 
     const images = products
-      .filter((p: any) => p.image)
-      .map((p: any) => ({
+      .filter((p): p is { id: string; name: string; image: string } => typeof p.image === "string")
+      .map((p) => ({
         name: p.name,
         url: p.image,
         productId: p.id,
@@ -37,7 +37,7 @@ export async function GET() {
   }
 }
 
-// POST — upload a new image (converts to Base64 data URL)
+// POST - upload a new image (auto-optimizes to WebP/AVIF then stores as data URL)
 export async function POST(req: Request) {
   try {
     const session = await auth()
@@ -52,30 +52,29 @@ export async function POST(req: Request) {
       return new NextResponse("No file provided", { status: 400 })
     }
 
-    // Validate type
     if (!file.type.startsWith("image/")) {
       return new NextResponse("Only image files allowed", { status: 400 })
     }
 
-    // Max 20MB
     if (file.size > 20 * 1024 * 1024) {
       return new NextResponse("File too large (max 20MB)", { status: 400 })
     }
 
-    // Convert to Base64 data URL (no filesystem needed)
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    const base64 = buffer.toString("base64")
-    const dataUrl = `data:${file.type};base64,${base64}`
+    const optimized = await optimizeImageBufferToDataUrl(buffer)
 
-    return NextResponse.json({ url: dataUrl, name: file.name }, { status: 201 })
+    return NextResponse.json(
+      { url: optimized.dataUrl, name: file.name, mimeType: optimized.mimeType, bytes: optimized.bytes },
+      { status: 201 }
+    )
   } catch (error) {
     console.error("Media upload error:", error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }
 }
 
-// DELETE — no-op since we no longer store files on disk
+// DELETE - no-op since we no longer store files on disk
 export async function DELETE() {
   return new NextResponse("OK", { status: 200 })
 }

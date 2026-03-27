@@ -8,6 +8,7 @@
     "build": "next build",
     "db:push": "prisma db push",
     "prisma:generate": "prisma generate",
+    "images:optimize": "node scripts/optimize-product-images.mjs",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate"
