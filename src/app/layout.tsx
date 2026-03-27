@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import dynamic from "next/dynamic";
 
 import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { AiChatWidgetLoader } from "@/components/ai-chat-widget-loader";
 import SessionSync from "@/components/session-sync";
 import { HydrationDetector } from "@/components/HydrationDetector";
 import NextTopLoader from 'nextjs-toploader';
@@ -12,11 +12,6 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-
-const AiChatWidget = dynamic(
-  () => import("@/components/ai-chat").then((mod) => mod.AiChatWidget),
-  { ssr: false, loading: () => null }
-);
 
 export const metadata: Metadata = {
   title: "Cipher Store | متجر سايفر",
@@ -252,7 +247,7 @@ export default async function RootLayout({
           {!isLockedOut && (
             <>
               <Footer />
-              <AiChatWidget />
+              <AiChatWidgetLoader />
             </>
           )}
         </Providers>
