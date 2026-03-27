@@ -61,7 +61,7 @@ export function SubscriptionPromoSection() {
         onClose={() => setActiveModal(null)}
         title="اشتراك سبوتيفاي بريميوم"
         subtitle="أرسل طلبك الآن وسنتواصل معك فوراً"
-        icon={<img src="/Cyberpunk-Spotify-logo.png" className="w-10 h-10 object-contain" alt="Spotify" />}
+        icon={<img src="/Cyberpunk-Spotify-logo.webp" className="w-10 h-10 object-contain" alt="Spotify" />}
         iconBgColor="rgba(29, 185, 84, 0.125)"
         iconColor="#1DB954"
         plans={[
@@ -80,7 +80,7 @@ export function SubscriptionPromoSection() {
         onClose={() => setActiveModal(null)}
         title="اشتراك ديسكورد نيترو"
         subtitle="أرسل طلبك الآن وسنتواصل معك فوراً"
-        icon={<img src="/NITRO-LOGO.png" className="w-10 h-10 object-contain" alt="Nitro" />}
+        icon={<img src="/NITRO-LOGO.webp" className="w-10 h-10 object-contain" alt="Nitro" />}
         iconBgColor="rgba(88, 101, 242, 0.125)"
         iconColor="#5865F2"
         plans={[

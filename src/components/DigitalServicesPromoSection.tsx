@@ -88,7 +88,7 @@ export function DigitalServicesPromoSection() {
               >
                 <div className="absolute inset-0 animate-[float_4s_ease-in-out_infinite] flex items-center justify-center">
                   <div className="absolute inset-0 bg-[#00f5ff] blur-[40px] opacity-30 rounded-full scale-75" />
-                  <img src="/web-logo.png" className="relative w-28 sm:w-36 md:w-48 h-auto object-contain drop-shadow-[0_0_20px_rgba(0,245,255,0.7)]" alt="Web Development" />
+                  <img src="/web-logo.webp" className="relative w-28 sm:w-36 md:w-48 h-auto object-contain drop-shadow-[0_0_20px_rgba(0,245,255,0.7)]" alt="Web Development" />
                 </div>
               </motion.div>
             </div>
@@ -103,7 +103,7 @@ export function DigitalServicesPromoSection() {
               >
                 <div className="absolute inset-0 animate-[float_5s_ease-in-out_infinite_reverse] flex items-center justify-center">
                   <div className="absolute inset-0 bg-[#a855f7] blur-[40px] opacity-30 rounded-full scale-75" />
-                  <img src="/cybernetic WordPress logo.png" className="relative w-32 sm:w-44 md:w-60 h-auto object-contain drop-shadow-[0_0_20px_rgba(168,85,247,0.7)]" alt="WordPress" />
+                  <img src="/cybernetic-wordpress-logo.webp" className="relative w-32 sm:w-44 md:w-60 h-auto object-contain drop-shadow-[0_0_20px_rgba(168,85,247,0.7)]" alt="WordPress" />
                 </div>
               </motion.div>
             </div>
