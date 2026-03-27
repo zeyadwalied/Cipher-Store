@@ -91,7 +91,7 @@ export default async function Home() {
               srcSet="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
             />
             <img
-              src="/main-maincraft.png"
+              src="/main-maincraft.webp"
               alt="Minecraft Character"
               className="w-full h-auto object-contain drop-shadow-[0_0_50px_rgba(0,245,255,0.4)] transition-all duration-700 group-hover/mc:scale-105 group-hover/mc:opacity-80"
               loading="lazy"
@@ -108,7 +108,7 @@ export default async function Home() {
               srcSet="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
             />
             <img
-              src="/maincraft-warrior.png"
+              src="/maincraft-warrior.webp"
               alt="Minecraft Warrior"
               className="w-full h-auto object-contain drop-shadow-[0_0_50px_rgba(168,85,247,0.4)] transition-all duration-700 group-hover/warrior:scale-105 group-hover/warrior:opacity-80 scale-x-[-1]"
               loading="lazy"
