@@ -37,6 +37,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   const category = categoryData?.category
   const products = categoryData?.products || []
   const activeDiscounts = categoryData?.activeDiscounts || []
+  const childCategories = categoryData?.childCategories || []
   const title = category?.name || "Category Not Found"
 
   return (
@@ -66,6 +67,19 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
       <div className="mb-12 border-b border-[#27272a] pb-8 text-right">
         <h1 className="text-4xl font-bold text-white tracking-tight mb-2">{title}</h1>
         <p className="text-gray-400">تصفح تشكيلتنا المميزة من منتجات {title}</p>
+        {childCategories.length > 0 && (
+          <div className="mt-4 flex flex-wrap justify-end gap-2">
+            {childCategories.map((child: { id: string; name: string; slug: string | null }) => (
+              <Link
+                key={child.id}
+                href={`/category/${child.slug || child.id}`}
+                className="rounded-full border border-[#00f5ff]/20 bg-[#00f5ff]/5 px-3 py-1 text-xs text-[#b6f7ff] transition-colors hover:border-[#00f5ff]/60 hover:text-white"
+              >
+                {child.name}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {products.length === 0 ? (
@@ -143,3 +157,4 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     </div>
   )
 }
+

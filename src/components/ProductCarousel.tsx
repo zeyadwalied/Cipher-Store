@@ -39,7 +39,7 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
 
     const computed = window.getComputedStyle(container)
     const gap = Number.parseFloat(computed.columnGap || computed.gap || "0") || 0
-    const cardsPerStep = window.innerWidth < 640 ? 1 : 2
+    const cardsPerStep = window.innerWidth >= 1024 ? 4 : window.innerWidth >= 640 ? 2 : 1
     return (firstItem.offsetWidth + gap) * cardsPerStep
   }
 
@@ -206,3 +206,4 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
     </div>
   )
 }
+

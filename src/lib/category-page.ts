@@ -3,8 +3,20 @@ import prisma from "@/lib/prisma"
 
 export const getCachedCategoryPageData = (idOrSlug: string) => unstable_cache(
   async () => {
+    const decodedIdOrSlug = (() => {
+      try {
+        return decodeURIComponent(idOrSlug)
+      } catch {
+        return idOrSlug
+      }
+    })()
+
+    const lookupValues = Array.from(new Set([idOrSlug, decodedIdOrSlug]))
+
     const category = await prisma.category.findFirst({
-      where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] }
+      where: {
+        OR: lookupValues.flatMap((value) => [{ id: value }, { slug: value }])
+      }
     })
 
     if (!category) {
@@ -35,7 +47,7 @@ export const getCachedCategoryPageData = (idOrSlug: string) => unstable_cache(
 
     const categoryIds = [category.id, ...descendantIds]
 
-    const [products, activeDiscounts] = await Promise.all([
+    const [products, activeDiscounts, childCategories] = await Promise.all([
       prisma.product.findMany({
         where: {
           categoryId: {
@@ -44,10 +56,24 @@ export const getCachedCategoryPageData = (idOrSlug: string) => unstable_cache(
         },
         orderBy: { createdAt: "desc" }
       }),
-      prisma.discount.findMany({ where: { isActive: true } })
+      prisma.discount.findMany({ where: { isActive: true } }),
+      prisma.category.findMany({
+        where: {
+          parentId: category.id
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true
+        },
+        orderBy: [
+          { sortOrder: "asc" },
+          { createdAt: "desc" }
+        ]
+      })
     ])
 
-    return { category, products, activeDiscounts }
+    return { category, products, activeDiscounts, childCategories }
   },
   [`category-page-${idOrSlug}`],
   { tags: ["categories", "products", "discounts", `category-${idOrSlug}`] }
