@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { MessageSquare, X, Send, LifeBuoy, AlertCircle } from "lucide-react"
 
 export function AiChatWidget() {
@@ -11,9 +11,12 @@ export function AiChatWidget() {
   const [isUnauth, setIsUnauth] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const isFetchingRef = useRef(false)
 
   // Fetch or create the user's active support chat
-  const fetchChat = async () => {
+  const fetchChat = useCallback(async () => {
+    if (isFetchingRef.current) return
+    isFetchingRef.current = true
     try {
       const res = await fetch('/api/chats/support')
       if (res.status === 401) {
@@ -22,13 +25,16 @@ export function AiChatWidget() {
       }
       if (res.ok) {
         const data = await res.json()
+        setIsUnauth(false)
         setChatSession(data)
         setMessages(data.messages || [])
       }
     } catch (error) {
       console.error("Failed to fetch support chat:", error)
+    } finally {
+      isFetchingRef.current = false
     }
-  }
+  }, [])
 
   // Initial load when opened
   useEffect(() => {
@@ -36,14 +42,29 @@ export function AiChatWidget() {
       setIsLoading(true)
       fetchChat().finally(() => setIsLoading(false))
     }
-  }, [isOpen])
+  }, [isOpen, chatSession, isUnauth, fetchChat])
 
   // Polling for new messages
   useEffect(() => {
     if (!isOpen || isUnauth) return
-    const interval = setInterval(fetchChat, 3000)
-    return () => clearInterval(interval)
-  }, [isOpen, isUnauth])
+
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") {
+        fetchChat()
+      }
+    }
+
+    refreshIfVisible()
+    const interval = setInterval(refreshIfVisible, 5000)
+    window.addEventListener("focus", refreshIfVisible)
+    document.addEventListener("visibilitychange", refreshIfVisible)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener("focus", refreshIfVisible)
+      document.removeEventListener("visibilitychange", refreshIfVisible)
+    }
+  }, [isOpen, isUnauth, fetchChat])
 
   // Auto-scroll
   useEffect(() => {
