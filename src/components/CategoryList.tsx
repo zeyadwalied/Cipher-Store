@@ -29,20 +29,16 @@ export async function CategoryList() {
                                 {/* Full-Section Background Image Layer */}
                                 {(category.backgroundImageUrl || category.imageUrl) && (
                                     <div className="absolute inset-0 z-0 overflow-hidden">
-                                        <div className={`absolute inset-y-0 ${idx % 2 === 0 ? "left-1/2 -translate-x-1/2 lg:left-[10%] lg:translate-x-0 xl:left-[8%]" : "right-1/2 translate-x-1/2 lg:right-[10%] lg:translate-x-0 xl:right-[8%]"} flex items-center justify-center`}>
-                                            <div className="relative h-[220px] w-[220px] sm:h-[320px] sm:w-[320px] md:h-[460px] md:w-[460px] lg:h-[700px] lg:w-[700px] xl:h-[860px] xl:w-[860px] opacity-[0.16] sm:opacity-20 md:opacity-[0.24] lg:opacity-[0.18] xl:opacity-[0.22]">
-                                                <img
-                                                    src={category.backgroundImageUrl || category.imageUrl}
-                                                    alt=""
-                                                    loading={idx === 0 ? "eager" : "lazy"}
-                                                    decoding="async"
-                                                    fetchPriority={idx === 0 ? "auto" : "low"}
-                                                    className="w-full h-full object-contain shadow-[0_0_120px_rgba(0,0,0,0.55)]"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="absolute inset-0 bg-gradient-to-b from-[#010205] via-transparent to-[#010205]" />
-                                        <div className="absolute inset-0 bg-gradient-to-r from-[#010205]/40 via-transparent to-[#010205]/40" />
+                                        <img
+                                            src={category.backgroundImageUrl || category.imageUrl}
+                                            alt=""
+                                            loading={idx === 0 ? "eager" : "lazy"}
+                                            decoding="async"
+                                            fetchPriority={idx === 0 ? "auto" : "low"}
+                                            className={`absolute inset-0 h-full w-full object-cover ${idx % 2 === 0 ? "object-[45%_center] md:object-[28%_center]" : "object-[55%_center] md:object-[72%_center]"} opacity-[0.24] sm:opacity-[0.28] lg:opacity-[0.22] scale-105`}
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-b from-[#010205]/78 via-[#010205]/28 to-[#010205]/82" />
+                                        <div className={`absolute inset-0 ${idx % 2 === 0 ? "bg-gradient-to-r from-[#010205]/58 via-transparent to-[#010205]/68" : "bg-gradient-to-l from-[#010205]/58 via-transparent to-[#010205]/68"}`} />
                                         <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(168,85,247,0.01)_50%)] bg-[length:100%_4px] pointer-events-none" />
                                     </div>
                                 )}

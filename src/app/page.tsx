@@ -194,20 +194,17 @@ export default async function Home() {
       <section className="relative w-full py-12 md:py-16 my-6 overflow-hidden border-y border-[#00f5ff]/30">
         {/* Background Image */}
         <div className="absolute inset-0 z-0 overflow-hidden">
-          <div className="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center justify-center md:left-[10%] md:translate-x-0 lg:left-[8%]">
-            <div className="relative h-[210px] w-[210px] sm:h-[300px] sm:w-[300px] md:h-[460px] md:w-[460px] lg:h-[680px] lg:w-[680px] xl:h-[820px] xl:w-[820px] opacity-10 sm:opacity-15 lg:opacity-20">
-              <Image
-                src="/steam-background.jpg"
-                alt=""
-                fill
-                sizes="(max-width: 640px) 210px, (max-width: 768px) 300px, (max-width: 1024px) 460px, (max-width: 1280px) 680px, 820px"
-                className="object-contain object-center"
-              />
-            </div>
-          </div>
+          <Image
+            src="/steam-background.jpg"
+            alt=""
+            fill
+            sizes="100vw"
+            quality={72}
+            className="object-cover object-[38%_center] md:object-[24%_center] opacity-[0.22] sm:opacity-[0.28] lg:opacity-[0.24] scale-105"
+          />
           {/* Cyberpunk Gradient Overlays */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#010205] via-[#010205]/80 to-[#010205]/30 md:rtl:bg-gradient-to-l" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#010205] via-transparent to-[#010205]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#010205]/58 via-[#010205]/18 to-[#010205]/72 md:rtl:bg-gradient-to-l" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#010205]/74 via-transparent to-[#010205]/80" />
 
           {/* Cyber noise and scanlines */}
           <div className="cyber-noise opacity-20" />
