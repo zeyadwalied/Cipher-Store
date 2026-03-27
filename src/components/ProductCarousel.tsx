@@ -4,6 +4,7 @@ import { useRef } from "react"
 import Link from "next/link"
 import { ChevronRight, ChevronLeft, ShoppingCart } from "lucide-react"
 import { calculateDiscount, Discount } from "@/lib/discountEngine"
+import { CATEGORY_CAROUSEL_LIMIT } from "@/lib/category-preview"
 
 export function ProductCarousel({ products, globalDiscounts = [] }: { products: any[], globalDiscounts?: Discount[] }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -54,12 +55,14 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
     }
   }
 
-  if (!products || products.length === 0) return null;
+  const displayedProducts = products.slice(0, CATEGORY_CAROUSEL_LIMIT)
+
+  if (displayedProducts.length === 0) return null;
 
   return (
     <div className="relative group">
       {/* Navigation Buttons */}
-      {products.length > 4 && (
+      {displayedProducts.length > 4 && (
         <>
           <button
             onClick={() => slide('right')}
@@ -81,10 +84,10 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
       {/* Track */}
       <div
         ref={scrollContainerRef}
-        className={`flex items-stretch gap-3 sm:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 pt-10 px-2 sm:px-0 scroll-smooth ${products.length < 3 ? 'justify-center sm:justify-start lg:justify-center' : products.length < 4 ? 'lg:justify-center' : ''}`}
+        className={`flex items-stretch gap-3 sm:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 pt-10 px-2 sm:px-0 scroll-smooth ${displayedProducts.length < 3 ? 'justify-center sm:justify-start lg:justify-center' : displayedProducts.length < 4 ? 'lg:justify-center' : ''}`}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {products.map((product) => (
+        {displayedProducts.map((product) => (
           <div
             key={product.id}
             data-carousel-item="true"

@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache"
 import prisma from "./prisma"
-import { sanitizeImageUrlForList } from "./image-url"
+import { CATEGORY_CAROUSEL_LIMIT } from "./category-preview"
 
 /**
  * Data Access Layer (DAL) for cached database queries.
@@ -47,14 +47,14 @@ export const getCachedCategoriesLight = unstable_cache(
                         slug: true,
                         description: true,
                         products: {
-                            take: 12,
+                            take: CATEGORY_CAROUSEL_LIMIT,
                             orderBy: { createdAt: 'desc' },
                             select: productSelectForList
                         }
                     }
                 },
                 products: {
-                    take: 12,
+                    take: CATEGORY_CAROUSEL_LIMIT,
                     orderBy: { createdAt: 'desc' },
                     select: productSelectForList
                 }

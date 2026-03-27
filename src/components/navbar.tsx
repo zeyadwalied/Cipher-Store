@@ -320,7 +320,7 @@ export function Navbar({ initialCategories = [] }: { initialCategories?: NavbarC
                     {cat.children.map(sub => (
                       <Link
                         key={sub.id}
-                        href={`/category/${sub.id}`}
+                        href={`/category/${sub.slug || sub.id}`}
                         className="flex items-center gap-2 py-2 px-3 rounded-lg text-xs text-gray-500 hover:text-[#a855f7] hover:bg-[#a855f7]/5 transition-all duration-200"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >

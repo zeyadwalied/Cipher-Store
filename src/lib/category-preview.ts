@@ -1,0 +1,1 @@
+export const CATEGORY_CAROUSEL_LIMIT = 8

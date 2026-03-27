@@ -4,6 +4,7 @@ import { ProductCarousel } from "@/components/ProductCarousel"
 import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper"
 import { SubscriptionPromoSection } from "@/components/SubscriptionPromoSection"
 import { getCachedCategories, getCachedDiscounts } from "@/lib/dal"
+import { CATEGORY_CAROUSEL_LIMIT } from "@/lib/category-preview"
 
 type HomeCategory = Awaited<ReturnType<typeof getCachedCategories>>[number]
 
@@ -21,6 +22,7 @@ export async function CategoryList() {
                 const hasProducts = category.products.length > 0 || category.children.some((child) => child.products.length > 0)
                 const subcategories = category.children || []
                 const heroImageSrc = category.backgroundImageUrl ?? category.imageUrl ?? undefined
+                const previewProducts = [...category.products, ...subcategories.flatMap((subcategory) => subcategory.products)].slice(0, CATEGORY_CAROUSEL_LIMIT)
 
                 return (
                     <div key={category.id} className="contents">
@@ -112,7 +114,7 @@ export async function CategoryList() {
                                     {hasProducts ? (
                                         <div className="-mx-4 sm:mx-0">
                                             <ProductCarousel
-                                                products={[...category.products, ...subcategories.flatMap((subcategory) => subcategory.products)].slice(0, 8)}
+                                                products={previewProducts}
                                                 globalDiscounts={activeDiscounts}
                                             />
                                         </div>
