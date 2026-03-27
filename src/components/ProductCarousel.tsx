@@ -61,7 +61,7 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
               {/* Image Section */}
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#030712]">
                 <img
-                  src={product.image || "https://placehold.co/600x400/0a0a0c/a855f7?text=Cipher+Store"}
+                  src={product.image || "/placeholder-product.svg"}
                   alt={product.name}
                   className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover/card:scale-110 group-hover/card:opacity-90"
                 />

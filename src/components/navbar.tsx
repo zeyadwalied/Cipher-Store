@@ -91,7 +91,7 @@ export function Navbar({ initialCategories = [] }: { initialCategories?: NavbarC
         {/* Logo */}
         <Link href="/" aria-label="Cipher Store homepage" className="flex items-center text-xl font-bold tracking-tighter text-white shrink-0" dir="ltr">
           <img
-            src="/favicon-96.png"
+            src="/logo-96.webp"
             alt="Cipher Store"
             className="h-10 md:h-14 w-auto object-contain drop-shadow-[0_0_12px_rgba(0,245,255,0.6)] z-20"
           />

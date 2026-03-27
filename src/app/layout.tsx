@@ -147,7 +147,7 @@ export default async function RootLayout({
     <html lang="en" className="dark">
       <head>
         {/* Preload critical assets so they appear instantly */}
-        <link rel="preload" href="/favicon-96.png" as="image" />
+        <link rel="preload" href="/logo-96.webp" as="image" />
 
         {/* Hide Next.js Dev Tools for non-owners */}
         {!showDevTools && (
@@ -187,7 +187,7 @@ export default async function RootLayout({
           <div style={{ position: 'absolute', bottom: '33%', right: '25%', width: '300px', height: '300px', background: 'rgba(168,85,247,0.05)', borderRadius: '50%', filter: 'blur(120px)', pointerEvents: 'none' }} />
           {/* Logo */}
           <div style={{ position: 'relative', marginBottom: '32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <img src="/favicon-96.png" alt="Cipher Store" style={{ position: 'relative', width: '96px', height: '96px', objectFit: 'contain', filter: 'drop-shadow(0 0 20px rgba(0,245,255,0.5))' }} />
+            <img src="/logo-96.webp" alt="Cipher Store" style={{ position: 'relative', width: '96px', height: '96px', objectFit: 'contain', filter: 'drop-shadow(0 0 20px rgba(0,245,255,0.5))' }} />
           </div>
           {/* Loading bar */}
           <div style={{ width: '224px', height: '3px', background: '#0a0a1a', borderRadius: '9999px', overflow: 'hidden', border: '1px solid rgba(0,245,255,0.1)', marginBottom: '20px', position: 'relative' }}>

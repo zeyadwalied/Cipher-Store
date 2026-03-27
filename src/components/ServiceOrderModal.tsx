@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Code, Palette, Monitor, Server, Layers, Cpu, X, Send, Loader2, LucideIcon } from "lucide-react"
+import { Code, Palette, Monitor, Server, Layers, Cpu, X, Send, Loader2 } from "lucide-react"
 
 const SERVICES_DATA = [
   {
@@ -11,7 +11,6 @@ const SERVICES_DATA = [
     title: 'برمجة مواقع مخصصة',
     desc: 'مواقع عصرية ومتجاوبة',
     color: '#00f5ff',
-    img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg',
     packages: ['موقع كود احترافي (React/Next.js)', 'تطبيق ويب مخصص (Full-Stack)', 'لوحة تحكم (Dashboard)', 'برمجة متجر خاص متطور']
   },
   {
@@ -20,7 +19,6 @@ const SERVICES_DATA = [
     title: 'جرافيك ديزاين',
     desc: 'هوية بصرية احترافية',
     color: '#a855f7',
-    img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/photoshop/photoshop-original.svg',
     packages: ['تصميم شعار (Logo)', 'هوية بصرية كاملة', 'تصاميم سوشيال ميديا']
   },
   {
@@ -29,7 +27,6 @@ const SERVICES_DATA = [
     title: 'خدمات ووردبريس',
     desc: 'بناء وإدارة المواقع',
     color: '#3b82f6',
-    img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/wordpress/wordpress-plain.svg',
     packages: ['متجر ووكومرس (WooCommerce)', 'بورتفوليو شخصي', 'موقع إخباري / مدونة', 'إصلاح وحماية مواقع ووردبريس']
   },
   {
@@ -38,7 +35,6 @@ const SERVICES_DATA = [
     title: 'استضافة',
     desc: 'سيرفرات سريعة وآمنة',
     color: '#00ff41',
-    img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg',
     packages: ['استضافة المواقع (سنة)', 'سيرفر VPS خاص', 'حجز دومين']
   },
   {
@@ -47,7 +43,6 @@ const SERVICES_DATA = [
     title: 'تنظيم سيرفر ديسكورد',
     desc: 'إعداد وتنظيم احترافي',
     color: '#5865F2',
-    img: 'https://assets-global.website-files.com/6257adef93867e50d84d30e2/636e0a6ca814282eca7172c6_icon_clyde_white_RGB.svg',
     packages: ['سيرفر أساسي', 'سيرفر احترافي مع بوتات', 'سيرفر مجتمعي ضخم']
   },
   {
@@ -56,7 +51,6 @@ const SERVICES_DATA = [
     title: 'تطوير بوت ديسكورد',
     desc: 'بوتات مخصصة وذكية',
     color: '#ED4245',
-    img: 'https://assets-global.website-files.com/6257adef93867e50d84d30e2/636e0a6ca814282eca7172c6_icon_clyde_white_RGB.svg',
     packages: ['بوت حماية وحظر', 'بوت نظام الاقتصادي والألعاب', 'بوت مخصص بالكامل']
   },
 ]
@@ -131,15 +125,9 @@ export function ServiceOrderModal() {
           >
             {/* Hover glow */}
             <div className="absolute inset-0 opacity-0 group-hover/svc:opacity-100 transition-opacity duration-500" style={{ background: `radial-gradient(circle at 50% 0%, ${service.color}15, transparent 70%)` }} />
-
-            {/* Tech Logo */}
-            <div className="relative w-10 h-10 sm:w-12 sm:h-12 mb-3 rounded-lg flex items-center justify-center" style={{ background: `${service.color}15`, border: `1px solid ${service.color}30` }}>
-              <img src={service.img} alt={service.title} className="w-6 h-6 sm:w-7 sm:h-7 opacity-80 group-hover/svc:opacity-100 transition-opacity" />
-            </div>
-
-            {/* Icon */}
-            <div className="relative mb-2 transition-transform group-hover/svc:scale-110" style={{ color: service.color }}>
-              <service.icon className="h-6 w-6 sm:h-7 sm:w-7" />
+            {/* Local icon only (no external CDN asset requests) */}
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 mb-3 rounded-lg flex items-center justify-center transition-transform group-hover/svc:scale-110" style={{ background: `${service.color}15`, border: `1px solid ${service.color}30`, color: service.color }}>
+              <service.icon className="h-6 w-6 sm:h-7 sm:w-7 opacity-90 group-hover/svc:opacity-100 transition-opacity" />
             </div>
 
             <h3 className="text-white text-xs sm:text-sm font-bold font-cyber mb-1 group-hover/svc:text-[color:var(--svc-color)] transition-colors">{service.title}</h3>
@@ -256,3 +244,4 @@ export function ServiceOrderModal() {
     </>
   )
 }
+
