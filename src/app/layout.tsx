@@ -13,8 +13,73 @@ import prisma from "@/lib/prisma";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { getSiteUrl } from "@/lib/site-url";
+import { unstable_cache } from "next/cache";
+import { sanitizeImageUrlForList } from "@/lib/image-url";
 
 const siteUrl = getSiteUrl()
+
+type NavbarCategory = {
+  id: string
+  name: string
+  slug: string | null
+  imageUrl: string | null
+  parentId: string | null
+  children: { id: string; name: string; slug: string | null; imageUrl: string | null }[]
+}
+
+const getCachedNavbarCategories = unstable_cache(
+  async (): Promise<NavbarCategory[]> => {
+    const categories = await prisma.category.findMany({
+      where: { parentId: null },
+      orderBy: [
+        { sortOrder: "asc" },
+        { createdAt: "desc" }
+      ],
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        imageUrl: true,
+        parentId: true,
+        children: {
+          orderBy: [
+            { sortOrder: "asc" },
+            { createdAt: "desc" }
+          ],
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            imageUrl: true
+          }
+        }
+      }
+    })
+
+    return categories.map((cat) => ({
+      ...cat,
+      imageUrl: sanitizeImageUrlForList(cat.imageUrl),
+      children: cat.children.map((child) => ({
+        ...child,
+        imageUrl: sanitizeImageUrlForList(child.imageUrl)
+      }))
+    }))
+  },
+  ["layout-navbar-categories"],
+  { tags: ["categories"] }
+)
+
+const getCachedMaintenanceMode = unstable_cache(
+  async (): Promise<boolean> => {
+    const settings = await prisma.siteSettings.findUnique({
+      where: { id: "global" },
+      select: { isMaintenanceMode: true }
+    })
+    return Boolean(settings?.isMaintenanceMode)
+  },
+  ["layout-maintenance-mode"],
+  { tags: ["site-settings"], revalidate: 30 }
+)
 
 export const metadata: Metadata = {
   title: "Cipher Store | متجر سايفر",
@@ -60,63 +125,29 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
-  const showDevTools = session?.user?.role === "OWNER";
-  let initialNavbarCategories: {
-    id: string
-    name: string
-    slug: string | null
-    imageUrl: string | null
-    parentId: string | null
-    children: { id: string; name: string; slug: string | null; imageUrl: string | null }[]
-  }[] = [];
-  try {
-    initialNavbarCategories = await prisma.category.findMany({
-      where: { parentId: null },
-      orderBy: [
-        { sortOrder: "asc" },
-        { createdAt: "desc" }
-      ],
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        imageUrl: true,
-        parentId: true,
-        children: {
-          orderBy: [
-            { sortOrder: "asc" },
-            { createdAt: "desc" }
-          ],
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            imageUrl: true
-          }
-        }
-      }
-    });
-  } catch (err) {
-    console.error("Navbar categories prefetch failed:", err);
-  }
-  
-  // Fetch Maintenance Mode safely
-  let isMaintenanceMode = false;
-  try {
-    const settings = await prisma.siteSettings.findUnique({ where: { id: "global" } });
-    isMaintenanceMode = settings?.isMaintenanceMode || false;
-  } catch (err) {
-    console.error("Maintenance check failed:", err);
-  }
-  
+  const sessionPromise = auth()
+  const navbarPromise = getCachedNavbarCategories().catch((err) => {
+    console.error("Navbar categories prefetch failed:", err)
+    return [] as NavbarCategory[]
+  })
+  const maintenancePromise = getCachedMaintenanceMode().catch((err) => {
+    console.error("Maintenance check failed:", err)
+    return false
+  })
+
+  const [session, initialNavbarCategories, isMaintenanceMode] = await Promise.all([
+    sessionPromise,
+    navbarPromise,
+    maintenancePromise
+  ])
+  const showDevTools = session?.user?.role === "OWNER"
   const isLockedOut = isMaintenanceMode && !showDevTools;
 
   return (
     <html lang="en" className="dark">
       <head>
         {/* Preload critical assets so they appear instantly */}
-        <link rel="preload" href="/favicon.ico.png" as="image" />
+        <link rel="preload" href="/favicon-96.png" as="image" />
 
         {/* Hide Next.js Dev Tools for non-owners */}
         {!showDevTools && (
@@ -156,7 +187,7 @@ export default async function RootLayout({
           <div style={{ position: 'absolute', bottom: '33%', right: '25%', width: '300px', height: '300px', background: 'rgba(168,85,247,0.05)', borderRadius: '50%', filter: 'blur(120px)', pointerEvents: 'none' }} />
           {/* Logo */}
           <div style={{ position: 'relative', marginBottom: '32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <img src="/favicon.ico.png" alt="Cipher Store" style={{ position: 'relative', width: '96px', height: '96px', objectFit: 'contain', filter: 'drop-shadow(0 0 20px rgba(0,245,255,0.5))' }} />
+            <img src="/favicon-96.png" alt="Cipher Store" style={{ position: 'relative', width: '96px', height: '96px', objectFit: 'contain', filter: 'drop-shadow(0 0 20px rgba(0,245,255,0.5))' }} />
           </div>
           {/* Loading bar */}
           <div style={{ width: '224px', height: '3px', background: '#0a0a1a', borderRadius: '9999px', overflow: 'hidden', border: '1px solid rgba(0,245,255,0.1)', marginBottom: '20px', position: 'relative' }}>
@@ -181,70 +212,57 @@ export default async function RootLayout({
               return;
             }
 
-            // Show the loader (it starts hidden by default)
-            loader.style.display = 'flex';
-
-            // If already shown this session, hide immediately
+            // Show the loader only once per browser session.
             if (sessionStorage.getItem('cipher_loader_shown')) {
-              loader.style.display = 'none';
               return;
             }
-
-            // First visit: show loader until page is fully loaded AND hydrated
             sessionStorage.setItem('cipher_loader_shown', '1');
-            document.body.style.overflow = 'hidden';
 
+            // Delay reveal so fast navigations avoid blocking first paint.
             var bar = document.getElementById('cyber-loader-bar');
             var status = document.getElementById('cyber-loader-status');
             var dismissed = false;
+            var revealed = false;
 
-            // Track both ready states
-            var isWindowLoaded = false;
-            var isReactHydrated = false;
+            function revealLoader() {
+              if (revealed || dismissed) return;
+              revealed = true;
+              loader.style.display = 'flex';
+              loader.style.opacity = '1';
+              if (bar) bar.style.width = '55%';
+            }
 
-            function checkDismissLoader() {
-              if (dismissed || !isWindowLoaded || !isReactHydrated) return;
+            function dismissLoader() {
+              if (dismissed) return;
               dismissed = true;
-              
+              if (!revealed) return;
+
               if (bar) bar.style.width = '100%';
               if (status) {
                 status.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#00ff41;box-shadow:0 0 10px #00ff41"></span> SYSTEM READY';
               }
-              setTimeout(function(){ loader.style.opacity = '0'; }, 400);
-              setTimeout(function(){ loader.style.display = 'none'; document.body.style.overflow = ''; }, 1000);
+              setTimeout(function(){ loader.style.opacity = '0'; }, 120);
+              setTimeout(function(){ loader.style.display = 'none'; }, 520);
             }
 
-            function forceDismiss() {
-              if (dismissed) return;
-              isWindowLoaded = true;
-              isReactHydrated = true;
-              checkDismissLoader();
-            }
+            var revealTimer = setTimeout(revealLoader, 700);
 
-            // Progressive loading bar animation
-            if (bar) {
-              setTimeout(function(){ if (!dismissed) bar.style.width = '30%'; }, 100);
-              setTimeout(function(){ if (!dismissed) bar.style.width = '60%'; }, 500);
-              setTimeout(function(){ if (!dismissed) bar.style.width = '85%'; }, 1000);
-            }
-
-            // 1) Wait for the page to FULLY load (all images, scripts, etc.)
+            // Dismiss once either load or hydration is done.
             window.addEventListener('load', function() {
-              isWindowLoaded = true;
-              checkDismissLoader();
+              clearTimeout(revealTimer);
+              dismissLoader();
             });
 
-            // 2) Wait for React Hydration to finish (dispatched by <HydrationDetector />)
             document.addEventListener('react-hydrated', function() {
-              // Add a small delay for IntersectionObservers to run and make categories visible
-              setTimeout(function() {
-                isReactHydrated = true;
-                checkDismissLoader();
-              }, 150);
+              clearTimeout(revealTimer);
+              dismissLoader();
             });
 
-            // Safety fallback: dismiss after 5 seconds no matter what
-            setTimeout(forceDismiss, 5000);
+            // Safety fallback.
+            setTimeout(function() {
+              clearTimeout(revealTimer);
+              dismissLoader();
+            }, 2200);
           })();
         `}} />
 

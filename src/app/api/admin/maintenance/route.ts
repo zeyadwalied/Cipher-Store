@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
 import { getMaintenanceModeValue } from "@/lib/admin-dashboard"
+import { revalidateTag } from "next/cache"
 
 export async function GET() {
   try {
@@ -30,6 +31,7 @@ export async function POST(req: Request) {
       update: { isMaintenanceMode },
       create: { id: "global", isMaintenanceMode }
     });
+    revalidateTag("site-settings", "max")
 
     // Optionally log to discord if he wants.
     try {

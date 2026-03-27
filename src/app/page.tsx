@@ -142,13 +142,16 @@ export default async function Home() {
               <div className="absolute -top-4 -left-4 w-8 h-8 sm:w-10 sm:h-10 border-t-2 border-l-2 border-[#00f5ff]/50 transition-all duration-500 group-hover:-top-6 group-hover:-left-6" />
               <div className="absolute -bottom-4 -right-4 w-8 h-8 sm:w-10 sm:h-10 border-b-2 border-r-2 border-[#a855f7]/50 transition-all duration-500 group-hover:-bottom-6 group-hover:-right-6" />
 
-              <Image
-                src="/favicon.ico.png"
+              <img
+                src="/favicon-192.png"
+                srcSet="/favicon-96.png 96w, /favicon-192.png 192w"
+                sizes="(max-width: 640px) 100px, 130px"
                 alt="Cipher Store logo"
                 width={130}
                 height={130}
-                priority
-                sizes="(max-width: 640px) 100px, 130px"
+                fetchPriority="high"
+                loading="eager"
+                decoding="sync"
                 className="relative w-[100px] sm:w-[130px] h-auto object-contain logo-glow-intense"
               />
             </div>

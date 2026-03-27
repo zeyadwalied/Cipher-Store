@@ -5,8 +5,6 @@ import Link from "next/link"
 import { ChevronRight, ChevronLeft, ShoppingCart } from "lucide-react"
 import { calculateDiscount, Discount } from "@/lib/discountEngine"
 
-import { motion } from "framer-motion"
-
 export function ProductCarousel({ products, globalDiscounts = [] }: { products: any[], globalDiscounts?: Discount[] }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
@@ -51,14 +49,10 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
         className={`flex items-stretch gap-3 sm:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 pt-10 px-2 sm:px-0 scroll-smooth ${products.length < 3 ? 'justify-center sm:justify-start lg:justify-center' : products.length < 4 ? 'lg:justify-center' : ''}`}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', transform: 'translateX(-15px)' }}
       >
-        {products.map((product, idx) => (
-          <motion.div
+        {products.map((product) => (
+          <div
             key={product.id}
             className="min-w-[140px] w-[calc(50vw-14px)] sm:min-w-[250px] sm:w-[calc(50vw-30px)] lg:min-w-[280px] lg:w-[calc(25%-15px)] flex-shrink-0 snap-start"
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5, delay: idx * 0.1, ease: "easeOut" }}
           >
             <Link
               href={`/product/${product.slug || product.id}`}
@@ -167,7 +161,7 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
               {/* Bottom Glowing Accent Line */}
               <div className="absolute bottom-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#a855f7] to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
             </Link>
-          </motion.div>
+          </div>
         ))}
       </div>
     </div>

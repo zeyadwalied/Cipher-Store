@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache"
 import prisma from "./prisma"
+import { sanitizeImageUrlForList } from "./image-url"
 
 /**
  * Data Access Layer (DAL) for cached database queries.
@@ -18,6 +19,12 @@ const productSelectForList = {
     deliveryType: true,
     description: true
 } as const
+
+type SanitizedCategoryImage = {
+    id: string
+    imageUrl: string | null
+    backgroundImageUrl: string | null
+}
 
 /**
  * Fetch and cache all categories (lightweight — NO base64 images).
@@ -70,6 +77,7 @@ export const getCachedCategoriesLight = unstable_cache(
             description: cat.description ? cat.description.substring(0, 200) : null,
             products: cat.products.map(p => ({
                 ...p,
+                image: sanitizeImageUrlForList(p.image),
                 description: p.description ? p.description.substring(0, 160) : ""
             })),
             children: cat.children.map(child => ({
@@ -77,6 +85,7 @@ export const getCachedCategoriesLight = unstable_cache(
                 description: child.description ? child.description.substring(0, 200) : null,
                 products: child.products.map(p => ({
                     ...p,
+                    image: sanitizeImageUrlForList(p.image),
                     description: p.description ? p.description.substring(0, 160) : ""
                 }))
             }))
@@ -87,19 +96,24 @@ export const getCachedCategoriesLight = unstable_cache(
 )
 
 /**
- * Fetch category images separately (NOT cached, because they're base64 blobs).
- * Returns a Map of categoryId -> { imageUrl, backgroundImageUrl }
+ * Fetch category images separately, then sanitize out inline base64 payloads.
+ * Cached safely because only lightweight URLs are returned.
  */
-export async function getCategoryImages(): Promise<Map<string, { imageUrl: string | null, backgroundImageUrl: string | null }>> {
-    const cats = await prisma.category.findMany({
-        select: { id: true, imageUrl: true, backgroundImageUrl: true }
-    })
-    const map = new Map<string, { imageUrl: string | null, backgroundImageUrl: string | null }>()
-    for (const c of cats) {
-        map.set(c.id, { imageUrl: c.imageUrl, backgroundImageUrl: c.backgroundImageUrl })
-    }
-    return map
-}
+const getCachedCategoryImages = unstable_cache(
+    async (): Promise<SanitizedCategoryImage[]> => {
+        const cats = await prisma.category.findMany({
+            select: { id: true, imageUrl: true, backgroundImageUrl: true }
+        })
+
+        return cats.map((c) => ({
+            id: c.id,
+            imageUrl: sanitizeImageUrlForList(c.imageUrl),
+            backgroundImageUrl: sanitizeImageUrlForList(c.backgroundImageUrl)
+        }))
+    },
+    ["categories-images-lite"],
+    { tags: ["categories"] }
+)
 
 /**
  * Full categories data: merges cached lightweight data + fresh images.
@@ -108,18 +122,25 @@ export async function getCategoryImages(): Promise<Map<string, { imageUrl: strin
 export async function getCachedCategories() {
     const [categories, imageMap] = await Promise.all([
         getCachedCategoriesLight(),
-        getCategoryImages()
+        getCachedCategoryImages()
     ])
+
+    const categoryImagesById = new Map<string, { imageUrl: string | null, backgroundImageUrl: string | null }>(
+        imageMap.map((entry) => [
+            entry.id,
+            { imageUrl: entry.imageUrl, backgroundImageUrl: entry.backgroundImageUrl }
+        ])
+    )
 
     // Merge images back into the cached structure
     return categories.map(cat => {
-        const imgs = imageMap.get(cat.id)
+        const imgs = categoryImagesById.get(cat.id)
         return {
             ...cat,
             imageUrl: imgs?.imageUrl ?? null,
             backgroundImageUrl: imgs?.backgroundImageUrl ?? null,
             children: cat.children.map(child => {
-                const childImgs = imageMap.get(child.id)
+                const childImgs = categoryImagesById.get(child.id)
                 return {
                     ...child,
                     imageUrl: childImgs?.imageUrl ?? null,
