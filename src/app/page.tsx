@@ -194,13 +194,13 @@ export default async function Home() {
       <section className="relative w-full py-12 md:py-16 my-6 overflow-hidden border-y border-[#00f5ff]/30">
         {/* Background Image */}
         <div className="absolute inset-0 z-0 overflow-hidden">
-          <div className="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center justify-center md:left-[18%] md:translate-x-0">
-            <div className="relative h-[190px] w-[190px] sm:h-[260px] sm:w-[260px] md:h-[340px] md:w-[340px] lg:h-[440px] lg:w-[440px] opacity-10 sm:opacity-15">
+          <div className="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center justify-center md:left-[10%] md:translate-x-0 lg:left-[8%]">
+            <div className="relative h-[210px] w-[210px] sm:h-[300px] sm:w-[300px] md:h-[460px] md:w-[460px] lg:h-[680px] lg:w-[680px] xl:h-[820px] xl:w-[820px] opacity-10 sm:opacity-15 lg:opacity-20">
               <Image
                 src="/steam-background.jpg"
                 alt=""
                 fill
-                sizes="(max-width: 640px) 190px, (max-width: 768px) 260px, (max-width: 1024px) 340px, 440px"
+                sizes="(max-width: 640px) 210px, (max-width: 768px) 300px, (max-width: 1024px) 460px, (max-width: 1280px) 680px, 820px"
                 className="object-contain object-center"
               />
             </div>
