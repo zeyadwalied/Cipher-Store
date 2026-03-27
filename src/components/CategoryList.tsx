@@ -1,11 +1,9 @@
-import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { ProductCarousel } from "@/components/ProductCarousel"
 import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper"
 import { SubscriptionPromoSection } from "@/components/SubscriptionPromoSection"
 import { getCachedCategories, getCachedDiscounts } from "@/lib/dal"
-import { sanitizeImageUrlForList } from "@/lib/image-url"
 
 export async function CategoryList() {
     const categories = await getCachedCategories()
@@ -20,7 +18,6 @@ export async function CategoryList() {
                 // Determine if this parent or any of its children have products
                 const hasProducts = category.products.length > 0 || category.children.some((child: any) => child.products.length > 0)
                 const subcategories = category.children || []
-                const backgroundImageUrl = sanitizeImageUrlForList(category.backgroundImageUrl || category.imageUrl)
 
                 return (
                     <div key={category.id} className="contents">
@@ -30,22 +27,22 @@ export async function CategoryList() {
                                 <div className="cyber-noise" />
 
                                 {/* Full-Section Background Image Layer */}
-                                {backgroundImageUrl && (
+                                {(category.backgroundImageUrl || category.imageUrl) && (
                                     <div className="absolute inset-0 z-0 overflow-hidden">
-                                        <div className="absolute inset-x-0 top-0 bottom-[-14%] sm:bottom-[-18%]">
-                                            <Image
-                                                src={backgroundImageUrl}
-                                                alt=""
-                                                fill
-                                                sizes="100vw"
-                                                quality={72}
-                                                loading="lazy"
-                                                className={`object-cover opacity-[0.22] sm:opacity-[0.26] md:opacity-[0.3] lg:opacity-[0.24] scale-[1.02] sm:scale-[1.06] md:scale-[1.12] ${idx % 2 === 0 ? "object-[50%_38%] md:object-[28%_48%]" : "object-[50%_38%] md:object-[72%_48%]"} shadow-[0_0_120px_rgba(0,0,0,0.4)]`}
-                                            />
+                                        <div className={`absolute inset-y-0 ${idx % 2 === 0 ? "left-1/2 -translate-x-1/2 lg:left-[10%] lg:translate-x-0 xl:left-[8%]" : "right-1/2 translate-x-1/2 lg:right-[10%] lg:translate-x-0 xl:right-[8%]"} flex items-center justify-center`}>
+                                            <div className="relative h-[220px] w-[220px] sm:h-[320px] sm:w-[320px] md:h-[460px] md:w-[460px] lg:h-[700px] lg:w-[700px] xl:h-[860px] xl:w-[860px] opacity-[0.16] sm:opacity-20 md:opacity-[0.24] lg:opacity-[0.18] xl:opacity-[0.22]">
+                                                <img
+                                                    src={category.backgroundImageUrl || category.imageUrl}
+                                                    alt=""
+                                                    loading={idx === 0 ? "eager" : "lazy"}
+                                                    decoding="async"
+                                                    fetchPriority={idx === 0 ? "auto" : "low"}
+                                                    className="w-full h-full object-contain shadow-[0_0_120px_rgba(0,0,0,0.55)]"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="absolute inset-0 bg-gradient-to-b from-[#010205]/68 via-[#010205]/18 to-[#010205]/74" />
-                                        <div className={`absolute inset-0 ${idx % 2 === 0 ? "bg-gradient-to-r from-[#010205]/52 via-transparent to-[#010205]/62" : "bg-gradient-to-l from-[#010205]/52 via-transparent to-[#010205]/62"}`} />
-                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(1,2,5,0.02)_0%,rgba(1,2,5,0.14)_48%,rgba(1,2,5,0.52)_100%)]" />
+                                        <div className="absolute inset-0 bg-gradient-to-b from-[#010205] via-transparent to-[#010205]" />
+                                        <div className="absolute inset-0 bg-gradient-to-r from-[#010205]/40 via-transparent to-[#010205]/40" />
                                         <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(168,85,247,0.01)_50%)] bg-[length:100%_4px] pointer-events-none" />
                                     </div>
                                 )}
@@ -54,7 +51,7 @@ export async function CategoryList() {
                                 <div className={`category-orb ${idx % 2 === 0 ? 'category-orb-cyan -top-20 -left-20' : 'category-orb-purple -top-20 -right-20'}`} />
                                 <div className={`category-orb ${idx % 2 === 0 ? 'category-orb-purple -bottom-20 -right-20' : 'category-orb-cyan -bottom-20 -left-20'}`} />
 
-                                {/* ??? FULL WIDTH CATEGORY HEADER ??? */}
+                                {/* ─── FULL WIDTH CATEGORY HEADER ─── */}
                                 <div className="relative bg-black/40 backdrop-blur-md border-y border-[#a855f7]/30 w-full mb-4 sm:mb-10 py-3 sm:py-10 px-2 sm:px-4 flex flex-col items-center justify-center overflow-hidden shadow-[0_0_60px_rgba(168,85,247,0.15)] min-h-[100px] sm:min-h-[180px]">
                                     {/* Wavy neon lines SVG */}
                                     <svg className="absolute inset-0 w-full h-full object-cover opacity-90 pointer-events-none" viewBox="0 0 1200 300" preserveAspectRatio="none">
@@ -165,4 +162,3 @@ export async function CategoryList() {
         </div>
     )
 }
-
