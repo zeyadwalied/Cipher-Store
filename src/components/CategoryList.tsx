@@ -20,6 +20,7 @@ export async function CategoryList() {
                 // Determine if this parent or any of its children have products
                 const hasProducts = category.products.length > 0 || category.children.some((child) => child.products.length > 0)
                 const subcategories = category.children || []
+                const heroImageSrc = category.backgroundImageUrl ?? category.imageUrl ?? undefined
 
                 return (
                     <div key={category.id} className="contents">
@@ -29,10 +30,10 @@ export async function CategoryList() {
                                 <div className="cyber-noise" />
 
                                 {/* Full-Section Background Image Layer */}
-                                {(category.backgroundImageUrl || category.imageUrl) && (
+                                {heroImageSrc && (
                                     <div className="absolute inset-0 z-0 overflow-hidden">
                                         <img
-                                            src={category.backgroundImageUrl || category.imageUrl}
+                                            src={heroImageSrc}
                                             alt=""
                                             loading={idx === 0 ? "eager" : "lazy"}
                                             decoding="async"
@@ -160,3 +161,4 @@ export async function CategoryList() {
         </div>
     )
 }
+
