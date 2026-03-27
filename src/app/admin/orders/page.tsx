@@ -13,9 +13,22 @@ export default async function AdminOrdersPage() {
     redirect("/admin/products")
   }
   const orders = await prisma.order.findMany({
-    include: {
-      user: true,
-      items: { include: { product: true } }
+    select: {
+      id: true,
+      userId: true,
+      total: true,
+      status: true,
+      createdAt: true,
+      confirmationSource: true,
+      senderPhoneNumber: true,
+      receiptImageUrl: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }
     },
     orderBy: { createdAt: 'desc' }
   })

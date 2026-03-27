@@ -5,20 +5,13 @@ import Link from "next/link"
 import { MessageSquare, Package, LifeBuoy, Trash2, Clock, CheckCircle, Loader2, Search, Repeat, User, ChevronDown } from "lucide-react"
 import StaffSelect from "@/components/admin/staff-select"
 
-export default function AdminChatsClient({ chats: initialChats, currentUserRole }: { chats: any[], currentUserRole: string }) {
+export default function AdminChatsClient({ chats: initialChats, currentUserRole, initialStaff }: { chats: any[], currentUserRole: string, initialStaff: any[] }) {
   const [chats, setChats] = useState(initialChats)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [filter, setFilter] = useState<"ALL" | "ORDER" | "SUPPORT">("ALL")
   const [searchTerm, setSearchTerm] = useState("")
   const [transferringId, setTransferringId] = useState<string | null>(null)
-  const [staff, setStaff] = useState<any[]>([])
-
-  useEffect(() => {
-    fetch("/api/admin/staff")
-      .then(res => res.json())
-      .then(data => setStaff(data))
-      .catch(console.error)
-  }, [])
+  const [staff] = useState<any[]>(initialStaff)
 
   const handleDelete = async (chatId: string) => {
     if (!confirm("Delete this chat and all its messages? This cannot be undone.")) return

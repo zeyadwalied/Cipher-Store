@@ -12,19 +12,39 @@ export default async function AdminAllChatsPage() {
     redirect("/admin/products")
   }
 
-  const chats = await prisma.chat.findMany({
-    where: { status: { not: "DELETED" } },
-    orderBy: { updatedAt: "desc" },
-    include: {
-      buyer: { select: { id: true, name: true, email: true } },
-      seller: { select: { id: true, name: true } },
-      order: { select: { id: true, status: true, total: true } },
-      messages: {
-        orderBy: { createdAt: "desc" },
-        take: 1
+  const [chats, staff] = await Promise.all([
+    prisma.chat.findMany({
+      where: { status: { not: "DELETED" } },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        buyer: { select: { id: true, name: true, email: true } },
+        seller: { select: { id: true, name: true } },
+        order: { select: { id: true, status: true, total: true } },
+        messages: {
+          select: {
+            id: true,
+            content: true,
+            senderId: true,
+            isAi: true,
+            createdAt: true
+          },
+          orderBy: { createdAt: "desc" },
+          take: 1
+        }
       }
-    }
-  })
+    }),
+    prisma.user.findMany({
+      where: {
+        role: { in: ["DEV", "OWNER", "MANAGER", "SUPPORT"] }
+      },
+      select: {
+        id: true,
+        name: true,
+        role: true
+      },
+      orderBy: { name: "asc" }
+    })
+  ])
 
   return (
     <div className="max-w-5xl mx-auto pb-24">
@@ -33,7 +53,7 @@ export default async function AdminAllChatsPage() {
         <h1 className="text-3xl font-bold text-white">All Chats</h1>
         <span className="ml-auto text-sm text-gray-500">{chats.length} conversation{chats.length !== 1 ? "s" : ""}</span>
       </div>
-      <AdminChatsClient chats={chats} currentUserRole={session.user.role} />
+      <AdminChatsClient chats={chats} currentUserRole={session.user.role} initialStaff={staff} />
     </div>
   )
 }

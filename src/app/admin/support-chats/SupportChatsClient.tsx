@@ -21,9 +21,21 @@ export function SupportChatsClient({ initialChats, currentUser }: { initialChats
   }
 
   useEffect(() => {
-    // Poll every 10 seconds for new chats/messages
-    const interval = setInterval(fetchChats, 10000)
-    return () => clearInterval(interval)
+    const runRefresh = () => {
+      if (document.visibilityState === "visible") {
+        fetchChats()
+      }
+    }
+
+    const interval = setInterval(runRefresh, 10000)
+    window.addEventListener("focus", runRefresh)
+    document.addEventListener("visibilitychange", runRefresh)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener("focus", runRefresh)
+      document.removeEventListener("visibilitychange", runRefresh)
+    }
   }, [])
 
   const handleAction = async (chatId: string, action: "TAKE" | "RESOLVE") => {
