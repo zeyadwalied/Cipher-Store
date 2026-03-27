@@ -12,15 +12,26 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { getSiteUrl } from "@/lib/site-url";
+
+const siteUrl = getSiteUrl()
 
 export const metadata: Metadata = {
   title: "Cipher Store | متجر سايفر",
   description: "متجر الألعاب والبطاقات الرقمية الأول - اشترِ ألعابك المفضلة وبطاقات الشحن بأفضل الأسعار",
-  metadataBase: new URL("https://cipherstore.online"),
+  metadataBase: new URL(siteUrl),
+  icons: {
+    icon: [
+      { url: "/icon.png", sizes: "256x256", type: "image/png" },
+      { url: "/favicon.ico.png", sizes: "256x256", type: "image/png" }
+    ],
+    shortcut: ["/icon.png"],
+    apple: [{ url: "/icon.png", sizes: "256x256" }]
+  },
   openGraph: {
     title: "Cipher Store | متجر سايفر",
     description: "متجر الألعاب والبطاقات الرقمية الأول - اشترِ ألعابك المفضلة وبطاقات الشحن بأفضل الأسعار",
-    url: "https://cipherstore.online",
+    url: siteUrl,
     siteName: "Cipher Store",
     images: [
       {

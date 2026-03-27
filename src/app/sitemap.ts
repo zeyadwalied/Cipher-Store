@@ -1,8 +1,9 @@
 import { MetadataRoute } from 'next'
 import prisma from "@/lib/prisma"
+import { getSiteUrl } from "@/lib/site-url"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cipherstore.online'
+    const baseUrl = getSiteUrl()
 
     // Fetch all categories
     const categories = await prisma.category.findMany({

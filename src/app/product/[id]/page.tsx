@@ -1,13 +1,16 @@
-import prisma from "@/lib/prisma"
 import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
-import { ArrowLeft, CheckCircle, Shield, Gamepad2, Star, Tag } from "lucide-react"
+import { ArrowLeft, Shield, Gamepad2, Star, Tag } from "lucide-react"
 import { AddToCartButton } from "./add-to-cart-button"
 import { calculateDiscount } from "@/lib/discountEngine"
 import { ProductReviews } from "./product-reviews"
 import type { Metadata } from "next"
 import { getCachedProduct, getCachedDiscounts, getProductStockCount } from "@/lib/dal"
+import { getSiteUrl } from "@/lib/site-url"
+
+const siteUrl = getSiteUrl()
+type ProductData = NonNullable<Awaited<ReturnType<typeof getCachedProduct>>>
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -20,10 +23,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: `${product.name} | Cipher Store`,
     description: product.description?.substring(0, 160) || `Buy ${product.name} at the best price on Cipher Store.`,
+    alternates: {
+      canonical: `/product/${product.slug || id}`
+    },
     openGraph: {
       title: product.name,
       description: product.description?.substring(0, 160) || `Buy ${product.name} at the best price on Cipher Store.`,
       images: product.image ? [{ url: product.image }] : [],
+      url: `${siteUrl}/product/${product.slug || id}`
     }
   }
 }
@@ -36,24 +43,30 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
   // If not found in cached DB but it's a preview dummy product
   if (!product && id.startsWith('preview-prod-')) {
-    product = {
+    const previewProduct: ProductData = {
       id,
       name: "Premium Gaming Item",
       price: parseFloat(id.split('-').pop() || "1") * 14.99,
       description: "This is a premium gaming product providing immediate delivery and safe execution. Your account safety is our priority. \n\nFeatures:\n- Instant Delivery\n- 24/7 Support\n- Global Region\n- Secure Transaction",
       image: null,
       categoryId: "dummy",
+      deliveryType: "MANUAL",
       stockQuantity: null,
       sellerId: null,
       reviews: [],
       createdAt: new Date(),
       updatedAt: new Date()
-    } as any
+    }
+    product = previewProduct
   }
 
   if (!product) {
     notFound()
   }
+
+  const averageRating = product.reviews?.length
+    ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
+    : 5
 
   const activeDiscounts = await getCachedDiscounts()
   const { finalPrice, originalPrice, bestDiscount } = calculateDiscount(product, activeDiscounts)
@@ -83,7 +96,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               "price": finalPrice.toFixed(2),
               "priceCurrency": "EGP",
               "availability": product.stockQuantity === 0 ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
-              "url": typeof window !== 'undefined' ? window.location.href : `https://cipher-store.com/product/${product.id}`
+              "url": `${siteUrl}/product/${product.slug || product.id}`
             }
           })
         }}
@@ -113,7 +126,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           <div className="flex items-center gap-2 mb-4">
             <div className="flex text-yellow-500">
               {[1, 2, 3, 4, 5].map(i => (
-                <Star key={i} className={`h-4 w-4 ${i <= (product.reviews?.length ? Math.round(product.reviews.reduce((a: any, b: any) => a + b.rating, 0) / product.reviews.length) : 5) ? "fill-current" : "text-gray-600"}`} />
+                <Star key={i} className={`h-4 w-4 ${i <= Math.round(averageRating) ? "fill-current" : "text-gray-600"}`} />
               ))}
             </div>
             <span className="text-sm text-gray-400">({product.reviews?.length || 0} تقييم)</span>

@@ -7,7 +7,10 @@ import { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "الرئيسية / Home",
-  description: "Cipher Store — تصفح أحدث عروض شحن الألعاب والبطاقات الرقمية."
+  description: "Cipher Store — تصفح أحدث عروض شحن الألعاب والبطاقات الرقمية.",
+  alternates: {
+    canonical: "/"
+  }
 }
 
 import { DigitalServicesPromoSection } from "@/components/DigitalServicesPromoSection"
@@ -16,6 +19,9 @@ import { Suspense } from "react"
 import { CategoryList } from "@/components/CategoryList"
 import { CategorySectionSkeleton } from "@/components/CategorySectionSkeleton"
 import { HomeReviewsSection } from "@/components/home-reviews-section"
+import { getSiteUrl } from "@/lib/site-url"
+
+const siteUrl = getSiteUrl()
 
 export default async function Home() {
   const latestReviews = await getCachedLatestReviews()
@@ -31,8 +37,8 @@ export default async function Home() {
             "@context": "https://schema.org",
             "@type": "Store",
             "name": "Cipher Store",
-            "url": "https://cipher-store.com",
-            "logo": "https://cipher-store.com/favicon.ico.png",
+            "url": siteUrl,
+            "logo": `${siteUrl}/icon.png`,
             "description": "شحن ألعاب، مفاتيح رقمية، حسابات ستيم وخدمات احترافية بأفضل الأسعار.",
             "address": {
               "@type": "PostalAddress",

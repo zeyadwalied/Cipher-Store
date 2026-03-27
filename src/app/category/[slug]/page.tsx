@@ -4,6 +4,9 @@ import { Gamepad2, ArrowLeft, ShoppingCart } from "lucide-react"
 import { calculateDiscount } from "@/lib/discountEngine"
 import type { Metadata } from "next"
 import { getCachedCategoryPageData } from "@/lib/category-page"
+import { getSiteUrl } from "@/lib/site-url"
+
+const siteUrl = getSiteUrl()
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -17,9 +20,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${category.name} | Cipher Store`,
     description: `Browse our premium selection of ${category.name} products at the best prices on Cipher Store.`,
+    alternates: {
+      canonical: `/category/${category.slug || slug}`
+    },
     openGraph: {
       title: `${category.name} | Cipher Store`,
       description: `Browse our premium selection of ${category.name} products at the best prices on Cipher Store.`,
+      url: `${siteUrl}/category/${category.slug || slug}`
     }
   }
 }
@@ -43,11 +50,11 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
             "@type": "CollectionPage",
             "name": title,
             "description": `Browse our selection of premium ${title.toLowerCase()} products.`,
-            "url": typeof window !== 'undefined' ? window.location.href : `https://cipher-store.com/category/${category?.slug || category?.id}`,
-            "hasPart": products.map((product: any) => ({
+            "url": `${siteUrl}/category/${category?.slug || category?.id}`,
+            "hasPart": products.map((product: { id: string; slug: string | null; name: string }) => ({
               "@type": "Product",
               "name": product.name,
-              "url": `https://cipher-store.com/product/${product.slug || product.id}`
+              "url": `${siteUrl}/product/${product.slug || product.id}`
             }))
           })
         }}
