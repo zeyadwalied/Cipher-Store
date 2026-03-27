@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { motion } from "framer-motion"
 
 export function AnimatedPromoLogos() {
@@ -20,7 +21,14 @@ export function AnimatedPromoLogos() {
         >
           <div className="absolute inset-0 animate-[float_4s_ease-in-out_infinite] flex items-center justify-center">
             <div className="absolute inset-0 bg-[#1DB954] blur-[30px] opacity-40 rounded-full scale-75 pointer-events-none" />
-            <img src="/Cyberpunk-Spotify-logo.webp" className="relative w-24 sm:w-28 md:w-40 h-auto object-contain drop-shadow-[0_0_15px_rgba(29,185,84,0.6)]" alt="Spotify" />
+            <Image
+              src="/Cyberpunk-Spotify-logo.webp"
+              alt="Spotify"
+              width={1536}
+              height={1024}
+              sizes="(max-width: 640px) 96px, (max-width: 768px) 112px, 160px"
+              className="relative w-24 sm:w-28 md:w-40 h-auto object-contain drop-shadow-[0_0_15px_rgba(29,185,84,0.6)]"
+            />
           </div>
         </motion.div>
       </div>
@@ -36,7 +44,14 @@ export function AnimatedPromoLogos() {
         >
           <div className="absolute inset-0 animate-[float_5s_ease-in-out_infinite_reverse] flex items-center justify-center">
             <div className="absolute inset-0 bg-[#5865F2] blur-[30px] opacity-40 rounded-full scale-75 pointer-events-none" />
-            <img src="/NITRO-LOGO.webp" className="relative w-28 sm:w-32 md:w-48 h-auto object-contain drop-shadow-[0_0_15px_rgba(88,101,242,0.6)]" alt="Discord Nitro" />
+            <Image
+              src="/NITRO-LOGO.webp"
+              alt="Discord Nitro"
+              width={1024}
+              height={1024}
+              sizes="(max-width: 640px) 112px, (max-width: 768px) 128px, 192px"
+              className="relative w-28 sm:w-32 md:w-48 h-auto object-contain drop-shadow-[0_0_15px_rgba(88,101,242,0.6)]"
+            />
           </div>
         </motion.div>
       </div>

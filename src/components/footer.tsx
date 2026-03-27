@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Gamepad2 } from "lucide-react"
 
 export function Footer() {
@@ -9,9 +10,12 @@ export function Footer() {
           {/* Brand */}
           <div className="flex flex-col gap-4">
             <Link href="/" className="flex items-center gap-0 text-xl font-bold tracking-tighter text-white">
-              <img
+              <Image
                 src="/favicon.ico.png"
-                alt="Logo"
+                alt="Cipher Store logo"
+                width={32}
+                height={32}
+                sizes="32px"
                 className="w-8 h-8 object-contain drop-shadow-[0_0_6px_rgba(0,245,255,0.7)] shrink-0"
               />
               <span className="bg-gradient-to-r from-[#00f5ff] to-[#a855f7] bg-clip-text text-transparent">

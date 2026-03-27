@@ -93,6 +93,8 @@ export default async function Home() {
             <img
               src="/main-maincraft.webp"
               alt="Minecraft Character"
+              width={1024}
+              height={1536}
               className="w-full h-auto object-contain drop-shadow-[0_0_50px_rgba(0,245,255,0.4)] transition-all duration-700 group-hover/mc:scale-105 group-hover/mc:opacity-80"
               loading="lazy"
               decoding="async"
@@ -110,6 +112,8 @@ export default async function Home() {
             <img
               src="/maincraft-warrior.webp"
               alt="Minecraft Warrior"
+              width={1536}
+              height={1024}
               className="w-full h-auto object-contain drop-shadow-[0_0_50px_rgba(168,85,247,0.4)] transition-all duration-700 group-hover/warrior:scale-105 group-hover/warrior:opacity-80 scale-x-[-1]"
               loading="lazy"
               decoding="async"
@@ -185,10 +189,12 @@ export default async function Home() {
       <section className="relative w-full py-12 md:py-16 my-6 overflow-hidden border-y border-[#00f5ff]/30">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <img
+          <Image
             src="/steam-background.jpg"
             alt="Steam Promotion"
-            className="w-full h-full object-cover opacity-25 object-[center_30%]"
+            fill
+            sizes="100vw"
+            className="object-cover opacity-25 object-[center_30%]"
           />
           {/* Cyberpunk Gradient Overlays */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#010205] via-[#010205]/80 to-[#010205]/30 md:rtl:bg-gradient-to-l" />
@@ -269,7 +275,7 @@ export default async function Home() {
       <section className="relative w-full py-14 md:py-20 my-20 overflow-hidden border-y border-[#a855f7]/30">
         {/* Background */}
         <div className="absolute inset-0 z-0">
-          <img src="/services-bg.png" alt="Services" className="w-full h-full object-cover opacity-20" />
+          <Image src="/services-bg.png" alt="Services" fill sizes="100vw" className="object-cover opacity-20" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#010205] via-[#010205]/80 to-[#010205]/30" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#010205] via-transparent to-[#010205]" />
           <div className="cyber-noise opacity-15" />
@@ -332,7 +338,7 @@ export default async function Home() {
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-none cyber-corner bg-gradient-to-tr from-[#a855f7] to-[#00f5ff] flex items-center justify-center text-white font-bold text-sm overflow-hidden">
                   {review.user?.image
-                    ? <img src={review.user.image} alt="" className="h-full w-full object-cover" />
+                    ? <img src={review.user.image} alt="" width={40} height={40} className="h-full w-full object-cover" />
                     : (review.user?.name?.charAt(0) || "U")
                   }
                 </div>
