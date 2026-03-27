@@ -5,18 +5,20 @@ import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper"
 import { SubscriptionPromoSection } from "@/components/SubscriptionPromoSection"
 import { getCachedCategories, getCachedDiscounts } from "@/lib/dal"
 
+type HomeCategory = Awaited<ReturnType<typeof getCachedCategories>>[number]
+
 export async function CategoryList() {
     const categories = await getCachedCategories()
     const activeDiscounts = await getCachedDiscounts()
 
     // Only show Parent Categories on Home Page root level
-    const mainCategories = categories.filter((c: any) => !c.parentId)
+    const mainCategories = categories.filter((c) => !c.parentId)
 
     return (
         <div className="flex flex-col gap-20">
-            {mainCategories.map((category: any, idx: number) => {
+            {mainCategories.map((category: HomeCategory, idx: number) => {
                 // Determine if this parent or any of its children have products
-                const hasProducts = category.products.length > 0 || category.children.some((child: any) => child.products.length > 0)
+                const hasProducts = category.products.length > 0 || category.children.some((child) => child.products.length > 0)
                 const subcategories = category.children || []
 
                 return (
@@ -109,7 +111,7 @@ export async function CategoryList() {
                                     {hasProducts ? (
                                         <div className="-mx-4 sm:mx-0">
                                             <ProductCarousel
-                                                products={[...category.products, ...subcategories.flatMap((s: any) => s.products)].slice(0, 16)}
+                                                products={[...category.products, ...subcategories.flatMap((subcategory) => subcategory.products)].slice(0, 8)}
                                                 globalDiscounts={activeDiscounts}
                                             />
                                         </div>

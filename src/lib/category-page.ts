@@ -11,12 +11,40 @@ export const getCachedCategoryPageData = (idOrSlug: string) => unstable_cache(
       return null
     }
 
+    const allCategories = await prisma.category.findMany({
+      select: {
+        id: true,
+        parentId: true
+      }
+    })
+
+    const descendantIds: string[] = []
+    const queue = [category.id]
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()
+      if (!currentId) continue
+
+      const childIds = allCategories
+        .filter((item) => item.parentId === currentId)
+        .map((item) => item.id)
+
+      descendantIds.push(...childIds)
+      queue.push(...childIds)
+    }
+
+    const categoryIds = [category.id, ...descendantIds]
+
     const [products, activeDiscounts] = await Promise.all([
       prisma.product.findMany({
-        where: { categoryId: category.id },
+        where: {
+          categoryId: {
+            in: categoryIds
+          }
+        },
         orderBy: { createdAt: "desc" }
       }),
-      (prisma as any).discount.findMany({ where: { isActive: true } })
+      prisma.discount.findMany({ where: { isActive: true } })
     ])
 
     return { category, products, activeDiscounts }
