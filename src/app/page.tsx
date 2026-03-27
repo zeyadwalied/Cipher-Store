@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { ShieldCheck, Zap, Headphones, Star, Gamepad2, ArrowRight, Cpu, Globe, Layers, Code, Palette, Monitor, Server } from "lucide-react"
 import prisma from "@/lib/prisma"
 import { ProductCarousel } from "@/components/ProductCarousel"
@@ -84,20 +85,36 @@ export default async function Home() {
 
         {/* Side Characters (Minecraft Example) */}
         <div className="absolute bottom-[-5%] right-[-10%] md:right-[-5%] z-10 w-[200px] md:w-[500px] pointer-events-none hidden sm:block opacity-70 group/mc">
-          <img
-            src="/main-maincraft.png"
-            alt="Minecraft Character"
-            className="w-full h-auto object-contain drop-shadow-[0_0_50px_rgba(0,245,255,0.4)] transition-all duration-700 group-hover/mc:scale-105 group-hover/mc:opacity-80"
-          />
+          <picture>
+            <source
+              media="(max-width: 639px)"
+              srcSet="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+            />
+            <img
+              src="/main-maincraft.png"
+              alt="Minecraft Character"
+              className="w-full h-auto object-contain drop-shadow-[0_0_50px_rgba(0,245,255,0.4)] transition-all duration-700 group-hover/mc:scale-105 group-hover/mc:opacity-80"
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
         </div>
 
         {/* Minecraft Warrior Character (Left) */}
         <div className="absolute bottom-[5%] left-[5%] md:left-[0%] z-10 w-[200px] md:w-[650px] pointer-events-none hidden sm:block opacity-70 group/warrior">
-          <img
-            src="/maincraft-warrior.png"
-            alt="Minecraft Warrior"
-            className="w-full h-auto object-contain drop-shadow-[0_0_50px_rgba(168,85,247,0.4)] transition-all duration-700 group-hover/warrior:scale-105 group-hover/warrior:opacity-80 scale-x-[-1]"
-          />
+          <picture>
+            <source
+              media="(max-width: 639px)"
+              srcSet="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+            />
+            <img
+              src="/maincraft-warrior.png"
+              alt="Minecraft Warrior"
+              className="w-full h-auto object-contain drop-shadow-[0_0_50px_rgba(168,85,247,0.4)] transition-all duration-700 group-hover/warrior:scale-105 group-hover/warrior:opacity-80 scale-x-[-1]"
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
         </div>
 
         <div className="container relative z-20 px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center gap-6 py-20">
@@ -119,10 +136,14 @@ export default async function Home() {
               <div className="absolute -top-4 -left-4 w-8 h-8 sm:w-10 sm:h-10 border-t-2 border-l-2 border-[#00f5ff]/50 transition-all duration-500 group-hover:-top-6 group-hover:-left-6" />
               <div className="absolute -bottom-4 -right-4 w-8 h-8 sm:w-10 sm:h-10 border-b-2 border-r-2 border-[#a855f7]/50 transition-all duration-500 group-hover:-bottom-6 group-hover:-right-6" />
 
-              <img
-                src="/logo.gif"
-                alt="Logo"
-                className="relative w-[100px] sm:w-[130px] h-auto object-contain logo-glow-intense cyber-glitch-logo"
+              <Image
+                src="/favicon.ico.png"
+                alt="Cipher Store logo"
+                width={130}
+                height={130}
+                priority
+                sizes="(max-width: 640px) 100px, 130px"
+                className="relative w-[100px] sm:w-[130px] h-auto object-contain logo-glow-intense"
               />
             </div>
 
