@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Search as SearchIcon, Filter, Star, Tag, ShoppingCart } from "lucide-react"
 import { AddToCartButton } from "@/app/product/[id]/add-to-cart-button"
 import { calculateDiscount } from "@/lib/discountEngine"
+import { getCachedCategoriesLight, getCachedDiscounts } from "@/lib/dal"
 
 export const dynamic = "force-dynamic"
 
@@ -46,8 +47,10 @@ export default async function SearchPage({
     orderBy: { createdAt: 'desc' }
   })
 
-  const categories = await prisma.category.findMany()
-  const activeDiscounts = await (prisma as any).discount.findMany({ where: { isActive: true } })
+  const [categories, activeDiscounts] = await Promise.all([
+    getCachedCategoriesLight(),
+    getCachedDiscounts()
+  ])
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-8 min-h-[70vh]">
