@@ -38,7 +38,7 @@ export default async function Home() {
             "@type": "Store",
             "name": "Cipher Store",
             "url": siteUrl,
-            "logo": `${siteUrl}/icon.png`,
+            "logo": `${siteUrl}/favicon-192.png`,
             "description": "شحن ألعاب، مفاتيح رقمية، حسابات ستيم وخدمات احترافية بأفضل الأسعار.",
             "address": {
               "@type": "PostalAddress",

@@ -22,11 +22,14 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   icons: {
     icon: [
+      { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/favicon-96.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon.png", sizes: "256x256", type: "image/png" },
       { url: "/favicon.ico.png", sizes: "256x256", type: "image/png" }
     ],
-    shortcut: ["/icon.png"],
-    apple: [{ url: "/icon.png", sizes: "256x256" }]
+    shortcut: ["/favicon.ico"],
+    apple: [{ url: "/favicon-192.png", sizes: "192x192" }]
   },
   openGraph: {
     title: "Cipher Store | متجر سايفر",
