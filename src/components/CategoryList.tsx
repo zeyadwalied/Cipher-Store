@@ -32,20 +32,20 @@ export async function CategoryList() {
                                 {/* Full-Section Background Image Layer */}
                                 {backgroundImageUrl && (
                                     <div className="absolute inset-0 z-0 overflow-hidden">
-                                        <div className="absolute inset-[-8%] sm:inset-[-10%]">
+                                        <div className="absolute inset-x-0 top-0 bottom-[-14%] sm:bottom-[-18%]">
                                             <Image
                                                 src={backgroundImageUrl}
                                                 alt=""
                                                 fill
                                                 sizes="100vw"
-                                                quality={68}
+                                                quality={72}
                                                 loading="lazy"
-                                                className={`object-cover opacity-[0.14] sm:opacity-[0.18] md:opacity-[0.2] lg:opacity-[0.17] scale-[1.08] sm:scale-[1.12] md:scale-[1.16] ${idx % 2 === 0 ? "object-[58%_center] md:object-[30%_center]" : "object-[42%_center] md:object-[70%_center]"} shadow-[0_0_120px_rgba(0,0,0,0.55)]`}
+                                                className={`object-cover opacity-[0.22] sm:opacity-[0.26] md:opacity-[0.3] lg:opacity-[0.24] scale-[1.02] sm:scale-[1.06] md:scale-[1.12] ${idx % 2 === 0 ? "object-[50%_38%] md:object-[28%_48%]" : "object-[50%_38%] md:object-[72%_48%]"} shadow-[0_0_120px_rgba(0,0,0,0.4)]`}
                                             />
                                         </div>
-                                        <div className="absolute inset-0 bg-gradient-to-b from-[#010205] via-[#010205]/30 to-[#010205]" />
-                                        <div className={`absolute inset-0 ${idx % 2 === 0 ? "bg-gradient-to-r from-[#010205]/75 via-[#010205]/45 to-[#010205]/80" : "bg-gradient-to-l from-[#010205]/75 via-[#010205]/45 to-[#010205]/80"}`} />
-                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(1,2,5,0.18)_45%,rgba(1,2,5,0.72)_100%)]" />
+                                        <div className="absolute inset-0 bg-gradient-to-b from-[#010205]/68 via-[#010205]/18 to-[#010205]/74" />
+                                        <div className={`absolute inset-0 ${idx % 2 === 0 ? "bg-gradient-to-r from-[#010205]/52 via-transparent to-[#010205]/62" : "bg-gradient-to-l from-[#010205]/52 via-transparent to-[#010205]/62"}`} />
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(1,2,5,0.02)_0%,rgba(1,2,5,0.14)_48%,rgba(1,2,5,0.52)_100%)]" />
                                         <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(168,85,247,0.01)_50%)] bg-[length:100%_4px] pointer-events-none" />
                                     </div>
                                 )}
