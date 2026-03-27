@@ -8,6 +8,28 @@ import { calculateDiscount, Discount } from "@/lib/discountEngine"
 export function ProductCarousel({ products, globalDiscounts = [] }: { products: any[], globalDiscounts?: Discount[] }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
+  const animateSlide = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return
+
+    const items = scrollContainerRef.current.querySelectorAll<HTMLElement>("[data-carousel-item='true']")
+    const offset = direction === 'right' ? 18 : -18
+
+    items.forEach((item, idx) => {
+      item.animate(
+        [
+          { opacity: 0.72, transform: `translateX(${offset}px)` },
+          { opacity: 1, transform: "translateX(0px)" }
+        ],
+        {
+          duration: 320,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+          delay: Math.min(idx, 5) * 14,
+          fill: "both"
+        }
+      )
+    })
+  }
+
   const getSlideDistance = () => {
     if (!scrollContainerRef.current) return 320
     const container = scrollContainerRef.current
@@ -22,6 +44,7 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
 
   const slide = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
+      animateSlide(direction)
       const scrollAmount = getSlideDistance()
       if (direction === 'left') {
         scrollContainerRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' })
