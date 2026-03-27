@@ -28,15 +28,19 @@ export async function CategoryList() {
 
                                 {/* Full-Section Background Image Layer */}
                                 {(category.backgroundImageUrl || category.imageUrl) && (
-                                    <div className="absolute inset-0 z-0">
-                                        <img
-                                            src={category.backgroundImageUrl || category.imageUrl}
-                                            alt=""
-                                            loading={idx === 0 ? "eager" : "lazy"}
-                                            decoding="async"
-                                            fetchPriority={idx === 0 ? "auto" : "low"}
-                                            className="w-full h-full object-cover opacity-40 shadow-[0_0_100px_rgba(0,0,0,0.8)]"
-                                        />
+                                    <div className="absolute inset-0 z-0 overflow-hidden">
+                                        <div className={`absolute inset-y-0 ${idx % 2 === 0 ? "left-1/2 -translate-x-1/2 lg:left-[18%] lg:translate-x-0" : "right-1/2 translate-x-1/2 lg:right-[18%] lg:translate-x-0"} flex items-center justify-center`}>
+                                            <div className="relative h-[220px] w-[220px] sm:h-[300px] sm:w-[300px] md:h-[380px] md:w-[380px] lg:h-[520px] lg:w-[520px] xl:h-[640px] xl:w-[640px] opacity-16 sm:opacity-20 md:opacity-24">
+                                                <img
+                                                    src={category.backgroundImageUrl || category.imageUrl}
+                                                    alt=""
+                                                    loading={idx === 0 ? "eager" : "lazy"}
+                                                    decoding="async"
+                                                    fetchPriority={idx === 0 ? "auto" : "low"}
+                                                    className="w-full h-full object-contain shadow-[0_0_100px_rgba(0,0,0,0.55)]"
+                                                />
+                                            </div>
+                                        </div>
                                         <div className="absolute inset-0 bg-gradient-to-b from-[#010205] via-transparent to-[#010205]" />
                                         <div className="absolute inset-0 bg-gradient-to-r from-[#010205]/40 via-transparent to-[#010205]/40" />
                                         <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(168,85,247,0.01)_50%)] bg-[length:100%_4px] pointer-events-none" />

@@ -193,14 +193,18 @@ export default async function Home() {
       {/* ─── STEAM PROMO BANNER ─────────────────────────────────── */}
       <section className="relative w-full py-12 md:py-16 my-6 overflow-hidden border-y border-[#00f5ff]/30">
         {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/steam-background.jpg"
-            alt="Steam Promotion"
-            fill
-            sizes="100vw"
-            className="object-cover opacity-25 object-[center_30%]"
-          />
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <div className="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center justify-center md:left-[18%] md:translate-x-0">
+            <div className="relative h-[190px] w-[190px] sm:h-[260px] sm:w-[260px] md:h-[340px] md:w-[340px] lg:h-[440px] lg:w-[440px] opacity-10 sm:opacity-15">
+              <Image
+                src="/steam-background.jpg"
+                alt=""
+                fill
+                sizes="(max-width: 640px) 190px, (max-width: 768px) 260px, (max-width: 1024px) 340px, 440px"
+                className="object-contain object-center"
+              />
+            </div>
+          </div>
           {/* Cyberpunk Gradient Overlays */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#010205] via-[#010205]/80 to-[#010205]/30 md:rtl:bg-gradient-to-l" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#010205] via-transparent to-[#010205]" />
