@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ShoppingCart, Menu, Search, User, LogOut, Package, Gamepad2, MessageSquare, Loader2 } from "lucide-react"
 import { useSession, signOut } from "next-auth/react"
 import { useCartStore } from "@/lib/store"
@@ -23,6 +24,7 @@ type NavbarCategory = {
 }
 
 export function Navbar({ initialCategories = [] }: { initialCategories?: NavbarCategory[] }) {
+  const router = useRouter()
   const { data: session, status } = useSession()
   const items = useCartStore((state) => state.items)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -66,6 +68,22 @@ export function Navbar({ initialCategories = [] }: { initialCategories?: NavbarC
   // Filter for top-level categories only for the main navbar list
   const mainCategories = categories.filter(cat => !cat.parentId)
 
+  const prefetchAccountRoutes = () => {
+    router.prefetch("/chat")
+    router.prefetch("/orders")
+    router.prefetch("/settings")
+    if (["DEV", "OWNER", "MANAGER", "SELLER", "SUPPORT"].includes(currentUserRole || "")) {
+      router.prefetch("/admin")
+    }
+  }
+
+  const prefetchCategoryRoutes = (cat: NavbarCategory) => {
+    router.prefetch(`/category/${cat.slug || cat.id}`)
+    cat.children?.forEach((sub) => {
+      router.prefetch(`/category/${sub.slug || sub.id}`)
+    })
+  }
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-[#27272a] bg-[#09090b]/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
@@ -88,6 +106,7 @@ export function Navbar({ initialCategories = [] }: { initialCategories?: NavbarC
             <div key={cat.id} className="relative group">
               <Link
                 href={`/category/${cat.slug || cat.id}`}
+                onMouseEnter={() => prefetchCategoryRoutes(cat)}
                 className="btn-cyber-outline px-4 py-2 text-[11px] tracking-widest border-[#00f5ff]/20 text-gray-400 hover:text-[#00f5ff] hover:border-[#00f5ff]/60 transition-all shrink-0 flex items-center justify-center min-w-[100px] gap-2"
               >
                 {cat.imageUrl && (
@@ -165,7 +184,13 @@ export function Navbar({ initialCategories = [] }: { initialCategories?: NavbarC
           ) : session ? (
             <div className="relative">
               <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                onMouseEnter={prefetchAccountRoutes}
+                onClick={() => {
+                  if (!isUserMenuOpen) {
+                    prefetchAccountRoutes()
+                  }
+                  setIsUserMenuOpen(!isUserMenuOpen)
+                }}
                 aria-label="Open account menu"
                 aria-haspopup="menu"
                 aria-expanded={isUserMenuOpen}
@@ -275,6 +300,7 @@ export function Navbar({ initialCategories = [] }: { initialCategories?: NavbarC
               <div key={cat.id}>
                 <Link
                   href={`/category/${cat.slug || cat.id}`}
+                  onMouseEnter={() => prefetchCategoryRoutes(cat)}
                   className="flex items-center gap-3 py-3 px-4 rounded-xl text-sm font-bold text-white/90 hover:text-[#00f5ff] hover:bg-[#00f5ff]/5 border border-transparent hover:border-[#00f5ff]/20 transition-all duration-300 group"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >

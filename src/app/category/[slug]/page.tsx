@@ -1,16 +1,13 @@
-import prisma from "@/lib/prisma"
 import Link from "next/link"
-import { Gamepad2, ArrowLeft, Tag, ShoppingCart } from "lucide-react"
+import { Gamepad2, ArrowLeft, ShoppingCart } from "lucide-react"
 import { calculateDiscount } from "@/lib/discountEngine"
 import type { Metadata } from "next"
-
-export const dynamic = "force-dynamic"
+import { getCachedCategoryPageData } from "@/lib/category-page"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const category = await prisma.category.findFirst({
-    where: { OR: [{ id: slug }, { slug: slug }] }
-  })
+  const categoryData = await getCachedCategoryPageData(slug)
+  const category = categoryData?.category
 
   if (!category) {
     return { title: 'Category Not Found | Cipher Store' }
@@ -28,22 +25,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-
-  // Fetch category and its products from DB
-  const category = await prisma.category.findFirst({
-    where: { OR: [{ id: slug }, { slug: slug }] }
-  })
-
+  const categoryData = await getCachedCategoryPageData(slug)
+  const category = categoryData?.category
+  const products = categoryData?.products || []
+  const activeDiscounts = categoryData?.activeDiscounts || []
   const title = category?.name || "Category Not Found"
-
-  let products: any[] = []
-  if (category) {
-    products = await prisma.product.findMany({
-      where: { categoryId: category.id },
-      orderBy: { createdAt: 'desc' }
-    })
-  }
-  const activeDiscounts = await (prisma as any).discount.findMany({ where: { isActive: true } })
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">

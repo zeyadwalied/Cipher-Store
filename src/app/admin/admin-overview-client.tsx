@@ -3,14 +3,22 @@ import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { Package, Users, ShoppingCart, DollarSign, Activity, ShieldAlert, Power } from "lucide-react"
 
-export default function AdminOverviewClient() {
+export default function AdminOverviewClient({
+  initialStats,
+  initialMaintenanceMode,
+}: {
+  initialStats: any
+  initialMaintenanceMode: boolean
+}) {
   const { data: session } = useSession()
-  const [stats, setStats] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false)
+  const [stats, setStats] = useState<any>(initialStats)
+  const [isLoading, setIsLoading] = useState(!initialStats)
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(initialMaintenanceMode)
   const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false)
 
   useEffect(() => {
+    if (initialStats) return
+
     fetch("/api/admin/dashboard-stats")
       .then(async (res) => {
         if (!res.ok) {
@@ -27,16 +35,7 @@ export default function AdminOverviewClient() {
         console.error(e)
         setIsLoading(false)
       })
-
-    // Fetch Maintenance Mode strictly for UI state (OWNER only)
-    fetch("/api/admin/maintenance")
-      .then(res => {
-        if(res.ok) return res.json();
-        return { isMaintenanceMode: false };
-      })
-      .then(data => setIsMaintenanceMode(data.isMaintenanceMode))
-      .catch(console.error)
-  }, [])
+  }, [initialStats])
 
   const toggleMaintenance = async () => {
     if (isMaintenanceMode) {

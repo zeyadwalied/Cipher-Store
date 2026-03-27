@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
+import { getMaintenanceModeValue } from "@/lib/admin-dashboard"
 
 export async function GET() {
   try {
@@ -9,8 +10,7 @@ export async function GET() {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const settings = await prisma.siteSettings.findUnique({ where: { id: "global" } });
-    return NextResponse.json({ isMaintenanceMode: settings?.isMaintenanceMode || false });
+    return NextResponse.json({ isMaintenanceMode: await getMaintenanceModeValue() });
   } catch (error) {
     return new NextResponse("Internal Server Error", { status: 500 });
   }

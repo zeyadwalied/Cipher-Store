@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import AdminOverviewClient from "./admin-overview-client"
+import { getDashboardStatsForUser, getMaintenanceModeValue } from "@/lib/admin-dashboard"
 
 export const dynamic = "force-dynamic"
 
@@ -12,5 +13,15 @@ export default async function AdminOverview() {
     redirect("/") 
   }
 
-  return <AdminOverviewClient />
+  const [initialStats, initialMaintenanceMode] = await Promise.all([
+    getDashboardStatsForUser(session.user.role, session.user.id),
+    session.user.role === "OWNER" ? getMaintenanceModeValue() : Promise.resolve(false)
+  ])
+
+  return (
+    <AdminOverviewClient
+      initialStats={initialStats}
+      initialMaintenanceMode={initialMaintenanceMode}
+    />
+  )
 }
