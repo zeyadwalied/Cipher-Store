@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma"
 import Link from "next/link"
+import Image from "next/image"
 import { notFound } from "next/navigation"
 import { ArrowLeft, CheckCircle, Shield, Gamepad2, Star, Tag } from "lucide-react"
 import { AddToCartButton } from "./add-to-cart-button"
@@ -95,10 +96,12 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         {/* Left Column: Image */}
         <div className="rounded-2xl border border-[#27272a] bg-[#141417] aspect-square flex items-center justify-center p-8 relative overflow-hidden group">
           <div className="absolute inset-0 bg-[#a855f7]/5 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
-          <img
+          <Image
             src={product.image || "/placeholder.png"}
             alt={product.name}
-            className="absolute inset-0 w-full h-full object-cover z-0"
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            className="absolute inset-0 object-cover z-0"
           />
         </div>
 

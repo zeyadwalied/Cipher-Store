@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
-import prisma from "@/lib/prisma"
 import { revalidateTag } from "next/cache"
 import { sendDiscordLog } from "@/lib/discord"
+import prisma from "@/lib/prisma"
+import { getAdminProductsData } from "@/lib/admin-products"
 
 export const dynamic = "force-dynamic"
 
@@ -17,13 +18,7 @@ export async function GET() {
   const user = await getAuth()
   if (!user) return new NextResponse("Unauthorized", { status: 401 })
 
-  const products = await prisma.product.findMany({
-    where: user.role === "SELLER" ? { sellerId: user.id } : {},
-    include: { category: true },
-    orderBy: { createdAt: 'desc' }
-  })
-
-  const categories = await prisma.category.findMany()
+  const { products, categories } = await getAdminProductsData(user.role, user.id)
 
   return NextResponse.json({ products, categories })
 }

@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Gamepad2, ArrowLeft, ShoppingCart } from "lucide-react"
 import { calculateDiscount } from "@/lib/discountEngine"
 import type { Metadata } from "next"
@@ -75,8 +76,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
               className="group flex flex-col rounded-xl border border-[#27272a] bg-[#141417] overflow-hidden transition-all hover:border-[#a855f7]/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.1)]"
             >
               <div className="aspect-[4/3] w-full bg-[#09090b] relative border-b border-[#27272a] overflow-hidden">
-                <img
-                  className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                <Image
+                  src={product.image || "/placeholder.png"}
+                  alt={product.name}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className="absolute inset-0 object-cover transition-transform group-hover:scale-105"
                 />
 
                 {/* Cyberpunk Discount Badge Overlay */}

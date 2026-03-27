@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma"
 import Link from "next/link"
+import Image from "next/image"
 import { Search as SearchIcon, Filter, Star, Tag, ShoppingCart } from "lucide-react"
 import { AddToCartButton } from "@/app/product/[id]/add-to-cart-button"
 import { calculateDiscount } from "@/lib/discountEngine"
@@ -146,10 +147,12 @@ export default async function SearchPage({
                   className="group relative rounded-xl border border-[#27272a] bg-[#141417] overflow-hidden transition-all hover:border-[#a855f7]/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.1)] flex flex-col"
                 >
                   <div className="aspect-[4/3] w-full bg-[#09090b] relative flex items-center justify-center border-b border-[#27272a] overflow-hidden">
-                    <img
+                    <Image
                       src={product.image || "/placeholder.png"}
                       alt={product.name}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="absolute inset-0 object-cover transition-transform group-hover:scale-105"
                     />
                     <div className="absolute top-3 right-3 z-10 bg-[#09090b]/80 border border-[#27272a] px-2 py-1 rounded-md flex items-center gap-1 backdrop-blur-md">
                       <Star className="h-3 w-3 text-yellow-500 fill-current" />
