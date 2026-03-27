@@ -85,7 +85,7 @@ export function SupportChatsClient({ initialChats, currentUser }: { initialChats
 
             return (
               <div key={chat.id} className="relative group block bg-[#141417] border border-[#27272a] hover:border-yellow-500/40 rounded-xl p-5 transition-colors pr-32">
-                <Link href={`/chat/${chat.id}`} className="absolute inset-0 z-0"></Link>
+                <Link href={`/chat/${chat.id}`} aria-label={`Open support chat with ${chat.buyer?.name || "Unknown User"}`} className="absolute inset-0 z-0"></Link>
                 
                 <div className="flex items-start justify-between gap-4 relative z-10 pointer-events-none">
                   <div className="flex items-center gap-4">

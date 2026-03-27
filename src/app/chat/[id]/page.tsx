@@ -209,7 +209,7 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
       <div className="w-full max-w-[800px] h-[80vh] flex flex-col shadow-2xl relative mx-auto">
         <div className="bg-[#141417] border border-[#27272a] rounded-t-xl p-4 flex items-center justify-between shadow-sm z-10">
           <div className="flex items-center gap-4">
-            <Link href="/chat" className="text-gray-400 hover:text-white transition-colors bg-[#27272a]/50 p-2 rounded-lg">
+            <Link href="/chat" aria-label="Back to messages" title="Back to messages" className="text-gray-400 hover:text-white transition-colors bg-[#27272a]/50 p-2 rounded-lg">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isSupport ? "bg-yellow-500/20 text-yellow-500" : "bg-[#a855f7]/20 text-[#a855f7]"}`}>

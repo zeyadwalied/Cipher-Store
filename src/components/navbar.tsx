@@ -62,7 +62,7 @@ export function Navbar() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
 
         {/* Logo */}
-        <Link href="/" className="flex items-center text-xl font-bold tracking-tighter text-white shrink-0" dir="ltr">
+        <Link href="/" aria-label="Cipher Store homepage" className="flex items-center text-xl font-bold tracking-tighter text-white shrink-0" dir="ltr">
           <img
             src="/favicon.ico.png"
             alt="Cipher Store"
@@ -123,6 +123,7 @@ export function Navbar() {
             <input
               type="text"
               name="q"
+              aria-label="Search products and categories"
               placeholder="ابحث عن الألعاب، البطاقات..."
               className="w-full bg-[#141417]/60 backdrop-blur-md border border-[#00f5ff]/20 rounded-full pl-4 pr-10 py-1.5 text-sm text-white focus:outline-none focus:border-[#00f5ff] focus:ring-1 focus:ring-[#00f5ff]/20 transition-all text-right"
               dir="rtl"
@@ -130,11 +131,11 @@ export function Navbar() {
             <Search className="h-4 w-4 text-[#00f5ff]/60 absolute right-3 top-1/2 -translate-y-1/2" />
           </form>
 
-          <Link href="/search" className="lg:hidden text-gray-300 hover:text-[#00f5ff] transition-colors">
+          <Link href="/search" aria-label="Open search page" title="Search" className="lg:hidden text-gray-300 hover:text-[#00f5ff] transition-colors">
             <Search className="h-5 w-5" />
           </Link>
 
-          <Link href="/cart" className="relative text-gray-300 hover:text-[#00f5ff] transition-all hover:drop-shadow-[0_0_8px_rgba(0,245,255,0.6)]">
+          <Link href="/cart" aria-label={`Shopping cart${isMounted && cartItemCount > 0 ? `, ${cartItemCount} items` : ""}`} title="Shopping cart" className="relative text-gray-300 hover:text-[#00f5ff] transition-all hover:drop-shadow-[0_0_8px_rgba(0,245,255,0.6)]">
             <ShoppingCart className="h-5 w-5" />
             {(isMounted && cartItemCount > 0) && (
               <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#00f5ff] text-[10px] font-bold text-black shadow-[0_0_10px_rgba(0,245,255,0.5)]">
@@ -156,6 +157,10 @@ export function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                aria-label="Open account menu"
+                aria-haspopup="menu"
+                aria-expanded={isUserMenuOpen}
+                title="Account menu"
                 className="flex items-center gap-2 rounded-full border border-[#00f5ff]/20 bg-[#141417]/80 backdrop-blur-sm px-3 py-1.5 text-sm font-medium text-gray-300 hover:text-white hover:border-[#00f5ff]/60 hover:shadow-[0_0_15px_rgba(0,245,255,0.1)] transition-all"
               >
                 <User className="h-4 w-4 text-[#00f5ff]" />
@@ -219,6 +224,10 @@ export function Navbar() {
 
           {/* Mobile Menu Toggle — Cyberpunk Styled */}
           <button
+            type="button"
+            aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isMobileMenuOpen}
+            title={isMobileMenuOpen ? "Close menu" : "Open menu"}
             className={`md:hidden relative p-2 rounded-lg border transition-all duration-300 ${isMobileMenuOpen
                 ? 'border-[#00f5ff] bg-[#00f5ff]/10 text-[#00f5ff] shadow-[0_0_15px_rgba(0,245,255,0.3)]'
                 : 'border-[#27272a] text-gray-400 hover:text-[#00f5ff] hover:border-[#00f5ff]/40 hover:shadow-[0_0_10px_rgba(0,245,255,0.15)]'

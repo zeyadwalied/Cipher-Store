@@ -88,6 +88,8 @@ export function AiChatWidget() {
     <>
       <button
         onClick={() => setIsOpen(true)}
+        aria-label="Open live support chat"
+        title="Open live support chat"
         className={`fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#0ea5e9] text-white shadow-lg transition-transform hover:scale-105 ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
       >
         <MessageSquare className="h-6 w-6" />
@@ -109,7 +111,7 @@ export function AiChatWidget() {
                 </p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-white transition-colors bg-[#27272a] p-1.5 rounded-full">
+            <button onClick={() => setIsOpen(false)} aria-label="Close live support chat" title="Close chat" className="text-gray-400 hover:text-white transition-colors bg-[#27272a] p-1.5 rounded-full">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -167,6 +169,8 @@ export function AiChatWidget() {
               />
               <button
                 type="submit"
+                aria-label="Send message"
+                title="Send message"
                 disabled={!input.trim() || isUnauth}
                 className="absolute right-1 flex h-8 w-8 items-center justify-center rounded-full bg-[#0ea5e9] text-white transition-colors hover:bg-[#0284c7] disabled:opacity-50"
               >

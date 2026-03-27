@@ -172,7 +172,7 @@ export function ServiceOrderModal() {
                     <p className="text-[9px] sm:text-xs text-gray-400 font-mono">أرسل طلبك الآن وسنتواصل معك فوراً</p>
                   </div>
                 </div>
-                <button onClick={closeModal} className="p-1 sm:p-2 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors shrink-0">
+                <button onClick={closeModal} type="button" aria-label="Close service order modal" title="Close" className="p-1 sm:p-2 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors shrink-0">
                   <X className="w-5 h-5" />
                 </button>
               </div>

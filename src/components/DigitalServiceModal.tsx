@@ -119,6 +119,9 @@ export function DigitalServiceModal({
                             </div>
                             <button
                                 onClick={onClose}
+                                type="button"
+                                aria-label="Close digital service modal"
+                                title="Close"
                                 className="p-1 sm:p-2 text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 shrink-0"
                             >
                                 <X className="w-5 h-5" />

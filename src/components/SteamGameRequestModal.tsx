@@ -94,7 +94,7 @@ export function SteamGameRequestModal() {
                                     </h2>
                                     <p className="text-sm text-gray-400">على حسابك الشخصي 🎁</p>
                                 </div>
-                                <button onClick={closeModal} className="p-1 text-gray-500 hover:text-white rounded-lg transition-colors">
+                                <button onClick={closeModal} type="button" aria-label="Close Steam Gift request modal" title="Close" className="p-1 text-gray-500 hover:text-white rounded-lg transition-colors">
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>

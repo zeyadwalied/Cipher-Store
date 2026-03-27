@@ -100,7 +100,7 @@ export default function AdminBellNotification() {
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 bg-[#a855f7] text-white px-6 py-3 rounded-2xl shadow-2xl shadow-[#a855f7]/30 animate-bounce pointer-events-auto">
           <Package className="h-5 w-5 shrink-0" />
           <span className="font-bold text-sm">🎉 هناك طلب جديد!</span>
-          <button onClick={() => setHasNewOrder(false)} className="ml-2 opacity-70 hover:opacity-100">
+          <button onClick={() => setHasNewOrder(false)} aria-label="Dismiss new order notification" title="Dismiss" className="ml-2 opacity-70 hover:opacity-100">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -110,6 +110,9 @@ export default function AdminBellNotification() {
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={handleBellClick}
+          aria-label={`Order notifications${count > 0 ? `, ${count} pending orders` : ""}`}
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
           className="relative flex items-center justify-center text-gray-300 hover:text-[#a855f7] transition-colors"
           title="Order Notifications"
         >
@@ -132,7 +135,7 @@ export default function AdminBellNotification() {
                   <span className="bg-[#a855f7] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{count}</span>
                 )}
               </h3>
-              <button onClick={() => setIsOpen(false)} className="text-gray-500 hover:text-white">
+              <button onClick={() => setIsOpen(false)} aria-label="Close notifications panel" title="Close notifications" className="text-gray-500 hover:text-white">
                 <X className="h-4 w-4" />
               </button>
             </div>
