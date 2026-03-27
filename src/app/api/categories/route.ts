@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
-import { sanitizeImageUrlForList } from "@/lib/image-url"
+import { sanitizeImageUrlForNav } from "@/lib/image-url"
 
 export const dynamic = "force-dynamic"
 
@@ -24,10 +24,10 @@ export async function GET() {
     return NextResponse.json(
       categories.map((cat) => ({
         ...cat,
-        imageUrl: sanitizeImageUrlForList(cat.imageUrl),
+        imageUrl: sanitizeImageUrlForNav(cat.imageUrl),
         children: cat.children.map((child) => ({
           ...child,
-          imageUrl: sanitizeImageUrlForList(child.imageUrl)
+          imageUrl: sanitizeImageUrlForNav(child.imageUrl)
         }))
       }))
     )

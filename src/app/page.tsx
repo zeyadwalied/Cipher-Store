@@ -86,7 +86,7 @@ export default async function Home() {
         <div className="absolute bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 border-[#00f5ff]/60" />
 
         {/* Side Characters (Minecraft Example) */}
-        <div className="absolute bottom-[-5%] right-[-10%] md:right-[-5%] z-10 w-[200px] md:w-[500px] pointer-events-none hidden sm:block opacity-70 group/mc">
+        <div className="absolute bottom-[-5%] right-[-10%] md:right-[-5%] z-10 w-[200px] md:w-[500px] pointer-events-none hidden xl:block opacity-70 group/mc">
           <picture>
             <source
               media="(max-width: 639px)"
@@ -105,7 +105,7 @@ export default async function Home() {
         </div>
 
         {/* Minecraft Warrior Character (Left) */}
-        <div className="absolute bottom-[5%] left-[5%] md:left-[0%] z-10 w-[200px] md:w-[650px] pointer-events-none hidden sm:block opacity-70 group/warrior">
+        <div className="absolute bottom-[5%] left-[5%] md:left-[0%] z-10 w-[200px] md:w-[650px] pointer-events-none hidden xl:block opacity-70 group/warrior">
           <picture>
             <source
               media="(max-width: 639px)"

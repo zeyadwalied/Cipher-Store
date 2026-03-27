@@ -14,7 +14,7 @@ import MaintenanceScreen from "@/components/MaintenanceScreen";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { getSiteUrl } from "@/lib/site-url";
 import { unstable_cache } from "next/cache";
-import { sanitizeImageUrlForList } from "@/lib/image-url";
+import { sanitizeImageUrlForNav } from "@/lib/image-url";
 
 const siteUrl = getSiteUrl()
 
@@ -58,10 +58,10 @@ const getCachedNavbarCategories = unstable_cache(
 
     return categories.map((cat) => ({
       ...cat,
-      imageUrl: sanitizeImageUrlForList(cat.imageUrl),
+      imageUrl: sanitizeImageUrlForNav(cat.imageUrl),
       children: cat.children.map((child) => ({
         ...child,
-        imageUrl: sanitizeImageUrlForList(child.imageUrl)
+        imageUrl: sanitizeImageUrlForNav(child.imageUrl)
       }))
     }))
   },
@@ -187,7 +187,7 @@ export default async function RootLayout({
           <div style={{ position: 'absolute', bottom: '33%', right: '25%', width: '300px', height: '300px', background: 'rgba(168,85,247,0.05)', borderRadius: '50%', filter: 'blur(120px)', pointerEvents: 'none' }} />
           {/* Logo */}
           <div style={{ position: 'relative', marginBottom: '32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <img src="/logo-96.webp" alt="Cipher Store" style={{ position: 'relative', width: '96px', height: '96px', objectFit: 'contain', filter: 'drop-shadow(0 0 20px rgba(0,245,255,0.5))' }} />
+            <img src="/logo-96.webp" alt="Cipher Store" fetchPriority="high" style={{ position: 'relative', width: '96px', height: '96px', objectFit: 'contain', filter: 'drop-shadow(0 0 20px rgba(0,245,255,0.5))' }} />
           </div>
           {/* Loading bar */}
           <div style={{ width: '224px', height: '3px', background: '#0a0a1a', borderRadius: '9999px', overflow: 'hidden', border: '1px solid rgba(0,245,255,0.1)', marginBottom: '20px', position: 'relative' }}>
