@@ -77,7 +77,6 @@ export const getCachedCategoriesLight = unstable_cache(
             description: cat.description ? cat.description.substring(0, 200) : null,
             products: cat.products.map(p => ({
                 ...p,
-                image: sanitizeImageUrlForList(p.image),
                 description: p.description ? p.description.substring(0, 160) : ""
             })),
             children: cat.children.map(child => ({
@@ -85,7 +84,6 @@ export const getCachedCategoriesLight = unstable_cache(
                 description: child.description ? child.description.substring(0, 200) : null,
                 products: child.products.map(p => ({
                     ...p,
-                    image: sanitizeImageUrlForList(p.image),
                     description: p.description ? p.description.substring(0, 160) : ""
                 }))
             }))

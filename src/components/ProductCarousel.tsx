@@ -8,9 +8,21 @@ import { calculateDiscount, Discount } from "@/lib/discountEngine"
 export function ProductCarousel({ products, globalDiscounts = [] }: { products: any[], globalDiscounts?: Discount[] }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
+  const getSlideDistance = () => {
+    if (!scrollContainerRef.current) return 320
+    const container = scrollContainerRef.current
+    const firstItem = container.querySelector<HTMLElement>("[data-carousel-item='true']")
+    if (!firstItem) return container.clientWidth * 0.8
+
+    const computed = window.getComputedStyle(container)
+    const gap = Number.parseFloat(computed.columnGap || computed.gap || "0") || 0
+    const cardsPerStep = window.innerWidth < 640 ? 1 : 2
+    return (firstItem.offsetWidth + gap) * cardsPerStep
+  }
+
   const slide = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
-      const scrollAmount = scrollContainerRef.current.clientWidth * 0.8;
+      const scrollAmount = getSlideDistance()
       if (direction === 'left') {
         scrollContainerRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' })
       } else {
@@ -28,14 +40,14 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
         <>
           <button
             onClick={() => slide('right')}
-            className="absolute right-1 sm:-right-5 top-1/2 -translate-y-1/2 z-20 h-7 w-7 sm:h-10 sm:w-10 flex items-center justify-center rounded-full bg-[#141417]/80 sm:bg-[#141417] border border-[#a855f7]/50 text-[#a855f7] hover:bg-[#a855f7] hover:text-white transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+            className="absolute right-1 sm:-right-5 top-1/2 -translate-y-1/2 z-20 h-8 w-8 sm:h-11 sm:w-11 flex items-center justify-center rounded-xl bg-[#09090b]/90 backdrop-blur-md border border-[#a855f7]/40 text-[#c084fc] hover:border-[#a855f7] hover:bg-[#a855f7]/20 hover:text-white transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(168,85,247,0.25)]"
             aria-label="Previous"
           >
             <ChevronRight className="h-4 w-4 sm:h-6 sm:w-6" />
           </button>
           <button
             onClick={() => slide('left')}
-            className="absolute left-1 sm:-left-5 top-1/2 -translate-y-1/2 z-20 h-7 w-7 sm:h-10 sm:w-10 flex items-center justify-center rounded-full bg-[#141417]/80 sm:bg-[#141417] border border-[#a855f7]/50 text-[#a855f7] hover:bg-[#a855f7] hover:text-white transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+            className="absolute left-1 sm:-left-5 top-1/2 -translate-y-1/2 z-20 h-8 w-8 sm:h-11 sm:w-11 flex items-center justify-center rounded-xl bg-[#09090b]/90 backdrop-blur-md border border-[#a855f7]/40 text-[#c084fc] hover:border-[#a855f7] hover:bg-[#a855f7]/20 hover:text-white transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(168,85,247,0.25)]"
             aria-label="Next"
           >
             <ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" />
@@ -47,11 +59,12 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
       <div
         ref={scrollContainerRef}
         className={`flex items-stretch gap-3 sm:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 pt-10 px-2 sm:px-0 scroll-smooth ${products.length < 3 ? 'justify-center sm:justify-start lg:justify-center' : products.length < 4 ? 'lg:justify-center' : ''}`}
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', transform: 'translateX(-15px)' }}
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {products.map((product) => (
           <div
             key={product.id}
+            data-carousel-item="true"
             className="min-w-[140px] w-[calc(50vw-14px)] sm:min-w-[250px] sm:w-[calc(50vw-30px)] lg:min-w-[280px] lg:w-[calc(25%-15px)] flex-shrink-0 snap-start"
           >
             <Link
