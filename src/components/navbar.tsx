@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
 import { ShoppingCart, Menu, Search, User, LogOut, Package, Gamepad2, MessageSquare, Loader2 } from "lucide-react"
 import { useSession, signOut } from "next-auth/react"
 import { useCartStore } from "@/lib/store"
@@ -14,12 +13,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function Navbar() {
+type NavbarCategory = {
+  id: string
+  name: string
+  slug?: string | null
+  imageUrl?: string | null
+  parentId: string | null
+  children?: { id: string, name: string, slug?: string | null, imageUrl?: string | null }[]
+}
+
+export function Navbar({ initialCategories = [] }: { initialCategories?: NavbarCategory[] }) {
   const { data: session, status } = useSession()
   const items = useCartStore((state) => state.items)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const [categories, setCategories] = useState<{ id: string, name: string, slug?: string | null, imageUrl?: string | null, parentId: string | null, children?: { id: string, name: string, slug?: string | null, imageUrl?: string | null }[] }[]>([])
+  const [categories, setCategories] = useState<NavbarCategory[]>(initialCategories)
   const [isMounted, setIsMounted] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
@@ -39,7 +47,8 @@ export function Navbar() {
       hasSyncedFromDB.current = true
     }
     window.addEventListener('sync-role', handleSyncRole)
-    if (isMounted) {
+
+    if (initialCategories.length === 0) {
       fetch('/api/categories').then(r => r.json()).then(data => {
         if (Array.isArray(data)) setCategories(data)
       }).catch(err => {
@@ -50,7 +59,7 @@ export function Navbar() {
     return () => {
       window.removeEventListener('sync-role', handleSyncRole)
     }
-  }, [session])
+  }, [session, initialCategories.length])
 
   const cartItemCount = items.reduce((total, item) => total + item.quantity, 0)
 

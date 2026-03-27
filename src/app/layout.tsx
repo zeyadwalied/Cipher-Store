@@ -48,6 +48,44 @@ export default async function RootLayout({
 }>) {
   const session = await auth();
   const showDevTools = session?.user?.role === "OWNER";
+  let initialNavbarCategories: {
+    id: string
+    name: string
+    slug: string | null
+    imageUrl: string | null
+    parentId: string | null
+    children: { id: string; name: string; slug: string | null; imageUrl: string | null }[]
+  }[] = [];
+  try {
+    initialNavbarCategories = await prisma.category.findMany({
+      where: { parentId: null },
+      orderBy: [
+        { sortOrder: "asc" },
+        { createdAt: "desc" }
+      ],
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        imageUrl: true,
+        parentId: true,
+        children: {
+          orderBy: [
+            { sortOrder: "asc" },
+            { createdAt: "desc" }
+          ],
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            imageUrl: true
+          }
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Navbar categories prefetch failed:", err);
+  }
   
   // Fetch Maintenance Mode safely
   let isMaintenanceMode = false;
@@ -200,7 +238,7 @@ export default async function RootLayout({
           <SpeedInsights />
           <HydrationDetector />
           <SessionSync />
-          <Navbar />
+          <Navbar initialCategories={initialNavbarCategories} />
           <main className="flex-1 flex flex-col relative w-full">
             {isLockedOut ? <MaintenanceScreen /> : children}
           </main>
