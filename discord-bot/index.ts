@@ -275,7 +275,7 @@ async function createOrderFallbackTicketChannel(guild: any, ticketCategoryId: st
 
     const itemsStr = order.items.map((i: any) => `${i.quantity}x ${i.product.name}`).join('\n');
     const embed = new EmbedBuilder()
-      .setTitle(`ðŸ›’ New Order Ticket (#${order.id})`)
+      .setTitle(` New Order Ticket (#${order.id})`)
       .setColor('#00f5ff')
       .addFields(
         { name: 'Customer', value: `${buyerName} (${chat.buyer?.email || 'Guest'})`, inline: true },
