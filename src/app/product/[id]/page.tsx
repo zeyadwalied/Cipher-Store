@@ -46,13 +46,13 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     const previewProduct: ProductData = {
       id,
       name: "Premium Gaming Item",
+      slug: null,
       price: parseFloat(id.split('-').pop() || "1") * 14.99,
       description: "This is a premium gaming product providing immediate delivery and safe execution. Your account safety is our priority. \n\nFeatures:\n- Instant Delivery\n- 24/7 Support\n- Global Region\n- Secure Transaction",
       image: null,
       categoryId: "dummy",
       deliveryType: "MANUAL",
       stockQuantity: null,
-      sellerId: null,
       reviews: [],
       createdAt: new Date(),
       updatedAt: new Date()
