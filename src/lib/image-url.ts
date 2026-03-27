@@ -28,7 +28,7 @@ function estimateDataUrlBytes(dataUrl: string): number {
  */
 export function sanitizeImageUrlForNav(
   value: string | null | undefined,
-  maxInlineBytes = 300 * 1024
+  maxInlineBytes = 3 * 1024 * 1024
 ): string | null {
   if (!value || typeof value !== "string") return null
   if (!isInlineDataImage(value)) return value

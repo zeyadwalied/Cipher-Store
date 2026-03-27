@@ -20,12 +20,6 @@ const productSelectForList = {
     description: true
 } as const
 
-type SanitizedCategoryImage = {
-    id: string
-    imageUrl: string | null
-    backgroundImageUrl: string | null
-}
-
 /**
  * Fetch and cache all categories (lightweight — NO base64 images).
  * Images are excluded from cache because categories store base64 data
@@ -94,24 +88,21 @@ export const getCachedCategoriesLight = unstable_cache(
 )
 
 /**
- * Fetch category images separately, then sanitize out inline base64 payloads.
- * Cached safely because only lightweight URLs are returned.
+ * Fetch category images separately (not cached).
+ * Category visuals may be stored as inline data URLs, and we want to preserve
+ * them for the category hero/background sections.
  */
-const getCachedCategoryImages = unstable_cache(
-    async (): Promise<SanitizedCategoryImage[]> => {
-        const cats = await prisma.category.findMany({
-            select: { id: true, imageUrl: true, backgroundImageUrl: true }
-        })
+export async function getCategoryImages(): Promise<Map<string, { imageUrl: string | null, backgroundImageUrl: string | null }>> {
+    const cats = await prisma.category.findMany({
+        select: { id: true, imageUrl: true, backgroundImageUrl: true }
+    })
 
-        return cats.map((c) => ({
-            id: c.id,
-            imageUrl: sanitizeImageUrlForList(c.imageUrl),
-            backgroundImageUrl: sanitizeImageUrlForList(c.backgroundImageUrl)
-        }))
-    },
-    ["categories-images-lite"],
-    { tags: ["categories"] }
-)
+    const map = new Map<string, { imageUrl: string | null, backgroundImageUrl: string | null }>()
+    for (const c of cats) {
+        map.set(c.id, { imageUrl: c.imageUrl, backgroundImageUrl: c.backgroundImageUrl })
+    }
+    return map
+}
 
 /**
  * Full categories data: merges cached lightweight data + fresh images.
@@ -120,25 +111,18 @@ const getCachedCategoryImages = unstable_cache(
 export async function getCachedCategories() {
     const [categories, imageMap] = await Promise.all([
         getCachedCategoriesLight(),
-        getCachedCategoryImages()
+        getCategoryImages()
     ])
-
-    const categoryImagesById = new Map<string, { imageUrl: string | null, backgroundImageUrl: string | null }>(
-        imageMap.map((entry) => [
-            entry.id,
-            { imageUrl: entry.imageUrl, backgroundImageUrl: entry.backgroundImageUrl }
-        ])
-    )
 
     // Merge images back into the cached structure
     return categories.map(cat => {
-        const imgs = categoryImagesById.get(cat.id)
+        const imgs = imageMap.get(cat.id)
         return {
             ...cat,
             imageUrl: imgs?.imageUrl ?? null,
             backgroundImageUrl: imgs?.backgroundImageUrl ?? null,
             children: cat.children.map(child => {
-                const childImgs = categoryImagesById.get(child.id)
+                const childImgs = imageMap.get(child.id)
                 return {
                     ...child,
                     imageUrl: childImgs?.imageUrl ?? null,
