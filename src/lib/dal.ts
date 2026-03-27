@@ -167,23 +167,25 @@ export const getCachedProduct = (idOrSlug: string) => unstable_cache(
  */
 export const getCachedDiscounts = unstable_cache(
     async () => {
-        return await (prisma as any).discount.findMany({ where: { isActive: true } })
+        return await prisma.discount.findMany({ where: { isActive: true } })
     },
     ['active-discounts'],
     { tags: ['discounts'] }
 )
 
 /**
- * Fetch and cache latest high-rated reviews.
+ * Fetch and cache latest reviews for home page.
  * Tag: 'reviews'
  */
 export const getCachedLatestReviews = unstable_cache(
     async () => {
         return await prisma.review.findMany({
-            where: { rating: { gte: 4 } },
-            include: { user: { select: { name: true, image: true } } },
+            include: {
+                user: { select: { name: true, image: true } },
+                product: { select: { id: true, name: true } }
+            },
             orderBy: { createdAt: 'desc' },
-            take: 3
+            take: 6
         })
     },
     ['latest-reviews'],

@@ -1,25 +1,88 @@
 import { NextResponse } from "next/server"
+import { revalidateTag } from "next/cache"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
 
-// Get reviews for a specific product
+// GET /api/reviews
+// - ?productId=xxx -> reviews for a specific product
+// - ?eligible=true -> products the logged-in user can still review
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
-    const productId = searchParams.get("productId")
-    const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : 10
+    const eligibleOnly = searchParams.get("eligible") === "true"
 
-    let whereClause = {}
-    if (productId) {
-      whereClause = { productId }
+    if (eligibleOnly) {
+      const session = await auth()
+      const userId = session?.user?.id
+      if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+
+      const [completedItems, reviewedProducts] = await Promise.all([
+        prisma.orderItem.findMany({
+          where: {
+            order: {
+              userId,
+              status: "COMPLETED"
+            }
+          },
+          select: {
+            productId: true,
+            product: { select: { id: true, name: true } }
+          }
+        }),
+        prisma.review.findMany({
+          where: { userId },
+          select: { productId: true }
+        })
+      ])
+
+      const reviewedIds = new Set(reviewedProducts.map((r) => r.productId))
+      const seen = new Set<string>()
+
+      const eligibleProducts = completedItems
+        .map((item) => item.product)
+        .filter((product) => {
+          if (!product) return false
+          if (reviewedIds.has(product.id)) return false
+          if (seen.has(product.id)) return false
+          seen.add(product.id)
+          return true
+        })
+
+      return NextResponse.json(eligibleProducts)
     }
+
+    const productId = searchParams.get("productId") || undefined
+    const includeProduct = searchParams.get("includeProduct") === "true"
+
+    const rawLimit = Number(searchParams.get("limit") ?? "10")
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(Math.max(Math.trunc(rawLimit), 1), 30)
+      : 10
+
+    const rawMinRating = Number(searchParams.get("minRating") ?? "")
+    const minRating = Number.isFinite(rawMinRating)
+      ? Math.min(Math.max(Math.trunc(rawMinRating), 1), 5)
+      : undefined
+
+    const whereClause: {
+      productId?: string
+      rating?: { gte: number }
+    } = {}
+
+    if (productId) whereClause.productId = productId
+    if (typeof minRating === "number") whereClause.rating = { gte: minRating }
 
     const reviews = await prisma.review.findMany({
       where: whereClause,
-      include: {
-        user: { select: { name: true, image: true } }
-      },
-      orderBy: { createdAt: 'desc' },
+      include: includeProduct
+        ? {
+            user: { select: { name: true, image: true } },
+            product: { select: { id: true, name: true } }
+          }
+        : {
+            user: { select: { name: true, image: true } }
+          },
+      orderBy: { createdAt: "desc" },
       take: limit
     })
 
@@ -30,36 +93,45 @@ export async function GET(req: Request) {
   }
 }
 
-// Post a new review
+// POST /api/reviews
 export async function POST(req: Request) {
   try {
     const session = await auth()
-    if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
+    const userId = session?.user?.id
+    if (!userId) return new NextResponse("Unauthorized", { status: 401 })
 
-    const { productId, rating, comment } = await req.json()
+    const body = await req.json()
+    const productId = typeof body?.productId === "string" ? body.productId : ""
+    const rating = Number(body?.rating)
+    const comment = typeof body?.comment === "string" ? body.comment.trim() : ""
 
-    if (!productId || !rating || rating < 1 || rating > 5) {
+    if (!productId || !Number.isInteger(rating) || rating < 1 || rating > 5) {
       return new NextResponse("Invalid input", { status: 400 })
     }
 
-    // Verify user actually bought this product and the order is COMPLETED
+    if (comment.length > 1200) {
+      return new NextResponse("Comment is too long (max 1200 chars).", { status: 400 })
+    }
+
+    // User can review only purchased + completed products
     const hasBought = await prisma.order.findFirst({
       where: {
-        userId: session.user.id,
+        userId,
         status: "COMPLETED",
         items: {
           some: { productId }
         }
-      }
+      },
+      select: { id: true }
     })
 
     if (!hasBought) {
       return new NextResponse("You can only review products you have purchased and completed.", { status: 403 })
     }
 
-    // Check if user already reviewed
     const existingReview = await prisma.review.findFirst({
-      where: { userId: session.user.id, productId }
+      where: { userId, productId },
+      select: { id: true }
     })
 
     if (existingReview) {
@@ -69,28 +141,33 @@ export async function POST(req: Request) {
     const review = await prisma.review.create({
       data: {
         productId,
-        userId: session.user.id,
+        userId,
         rating,
-        comment
+        comment: comment || null
       },
       include: {
         user: { select: { name: true, image: true, email: true } },
-        product: { select: { name: true } }
+        product: { select: { id: true, name: true } }
       }
     })
 
+    revalidateTag("reviews", "max")
+    revalidateTag(`product-${productId}`, "max")
+
     try {
-      const { sendDiscordLog } = await import("@/lib/discord");
+      const { sendDiscordLog } = await import("@/lib/discord")
       await sendDiscordLog("reviews", {
-        title: `🟢 New Review: ${review.product.name}`,
-        color: 0x22c55e, // Green
+        title: `New Review: ${review.product.name}`,
+        color: 0x22c55e,
         fields: [
           { name: "User", value: review.user?.email || review.user?.name || "Unknown", inline: true },
-          { name: "Rating", value: "⭐".repeat(review.rating), inline: true },
-          { name: "Comment", value: comment || "No comment provided", inline: false }
+          { name: "Rating", value: `${review.rating}/5`, inline: true },
+          { name: "Comment", value: review.comment || "No comment provided", inline: false }
         ]
       })
-    } catch (e) { }
+    } catch {
+      // Logging failures should not break review creation.
+    }
 
     return NextResponse.json(review, { status: 201 })
   } catch (error) {

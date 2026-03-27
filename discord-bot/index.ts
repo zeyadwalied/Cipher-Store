@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Partials, ChannelType, TextChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, Partials, ChannelType, TextChannel, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import "dotenv/config";
@@ -8,7 +8,8 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DIRECT_URL || process.env.DATABASE_URL,
+      // Prefer pooled URL for long-running bot stability.
+      url: process.env.DATABASE_URL || process.env.DIRECT_URL,
     },
   },
 });
@@ -404,7 +405,11 @@ client.on('messageCreate', async (message) => {
         await message.reply('🧹 This channel is not linked to a web ticket, but I will delete it anyway in 5 seconds...');
       }
       const channelToDelete = message.channel;
-      setTimeout(() => channelToDelete?.delete().catch(() => { }), 5000);
+      setTimeout(() => {
+        if ("delete" in channelToDelete && typeof channelToDelete.delete === "function") {
+          void channelToDelete.delete().catch(() => { });
+        }
+      }, 5000);
       return;
     }
 
@@ -451,12 +456,42 @@ client.on('interactionCreate', async (interaction) => {
     if (!orderId) return;
 
     const action = interaction.customId.split('_')[0];
-    if (action === 'accept') {
-      const order = await prisma.order.update({
+    if (action === 'accept' || action === 'reject') {
+      const nextStatus = action === 'accept' ? 'COMPLETED' : 'CANCELLED';
+      const confirmationLabel = action === 'accept' ? 'confirmed' : 'rejected';
+      const icon = action === 'accept' ? '✅' : '❌';
+
+      const updated = await prisma.order.updateMany({
+        where: {
+          id: orderId,
+          status: { in: ['PENDING', 'PAID'] }
+        },
+        data: { status: nextStatus, confirmationSource: 'DISCORD', confirmedByName: interaction.user.tag }
+      });
+
+      if (!updated.count) {
+        await interaction.reply({
+          content: '⚠️ This order was already processed or no longer exists.',
+          flags: MessageFlags.Ephemeral
+        }).catch(() => { });
+        await interaction.message.edit({ components: [] }).catch(() => { });
+        return;
+      }
+
+      const order = await prisma.order.findUnique({
         where: { id: orderId },
-        data: { status: 'COMPLETED', confirmationSource: 'DISCORD', confirmedByName: interaction.user.tag },
         include: { chat: true }
       });
+
+      if (!order) {
+        await interaction.reply({
+          content: '⚠️ Order not found after update.',
+          flags: MessageFlags.Ephemeral
+        }).catch(() => { });
+        await interaction.message.edit({ components: [] }).catch(() => { });
+        return;
+      }
+
       // Close the associated chat
       if (order.chat) {
         await prisma.chat.update({
@@ -465,34 +500,23 @@ client.on('interactionCreate', async (interaction) => {
         }).catch(() => {});
         // Add system message
         await prisma.message.create({
-          data: { chatId: order.chat.id, content: `✅ Order confirmed by ${interaction.user.tag} via Discord.`, isAi: true }
+          data: {
+            chatId: order.chat.id,
+            content: `${icon} Order ${confirmationLabel} by ${interaction.user.tag} via Discord.`,
+            isAi: true
+          }
         }).catch(() => {});
       }
-      await interaction.reply({ content: `✅ Order **${orderId}** confirmed by ${interaction.user.tag}! Ticket will close shortly...`, components: [] });
-      await interaction.message.edit({ components: [] }).catch(() => { });
-    } else if (action === 'reject') {
-      const order = await prisma.order.update({
-        where: { id: orderId },
-        data: { status: 'CANCELLED', confirmationSource: 'DISCORD', confirmedByName: interaction.user.tag },
-        include: { chat: true }
+      await interaction.reply({
+        content: `${icon} Order **${orderId}** ${confirmationLabel} by ${interaction.user.tag}! Ticket will close shortly...`,
+        components: []
       });
-      // Close the associated chat
-      if (order.chat) {
-        await prisma.chat.update({
-          where: { id: order.chat.id },
-          data: { status: 'CLOSED_BY_DISCORD' }
-        }).catch(() => {});
-        await prisma.message.create({
-          data: { chatId: order.chat.id, content: `❌ Order rejected by ${interaction.user.tag} via Discord.`, isAi: true }
-        }).catch(() => {});
-      }
-      await interaction.reply({ content: `❌ Order **${orderId}** rejected by ${interaction.user.tag}. Ticket will close shortly...`, components: [] });
       await interaction.message.edit({ components: [] }).catch(() => { });
     }
   } catch (err) {
     console.error("Error in interactionCreate:", err);
     if (interaction.isRepliable()) {
-      await interaction.reply({ content: '❌ Failed to process. Might already be processed.', ephemeral: true }).catch(() => { });
+      await interaction.reply({ content: '❌ Failed to process. Might already be processed.', flags: MessageFlags.Ephemeral }).catch(() => { });
     }
   }
 });

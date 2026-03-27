@@ -1,12 +1,8 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ShieldCheck, Zap, Headphones, Star, Gamepad2, ArrowRight, Cpu, Globe, Layers, Code, Palette, Monitor, Server } from "lucide-react"
-import prisma from "@/lib/prisma"
-import { ProductCarousel } from "@/components/ProductCarousel"
-import { ScrollAnimationWrapper } from "@/components/ScrollAnimationWrapper"
+import { ShieldCheck, Zap, Headphones, Gamepad2, ArrowRight, Globe } from "lucide-react"
 import { ServiceOrderModal } from "@/components/ServiceOrderModal"
 import { SteamGameRequestModal } from "@/components/SteamGameRequestModal"
-import { AnimatedPromoLogos } from "@/components/AnimatedPromoLogos"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -14,12 +10,12 @@ export const metadata: Metadata = {
   description: "Cipher Store — تصفح أحدث عروض شحن الألعاب والبطاقات الرقمية."
 }
 
-import { SubscriptionPromoSection } from "@/components/SubscriptionPromoSection"
 import { DigitalServicesPromoSection } from "@/components/DigitalServicesPromoSection"
 import { getCachedLatestReviews } from "@/lib/dal"
 import { Suspense } from "react"
 import { CategoryList } from "@/components/CategoryList"
 import { CategorySectionSkeleton } from "@/components/CategorySectionSkeleton"
+import { HomeReviewsSection } from "@/components/home-reviews-section"
 
 export default async function Home() {
   const latestReviews = await getCachedLatestReviews()
@@ -310,51 +306,7 @@ export default async function Home() {
       </section>
 
 
-      {/* ─── REVIEWS ──────────────────────────────────────────── */}
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-black font-cyber text-white" style={{ textShadow: "0 0 30px rgba(168,85,247,0.4)" }}>
-            آراء عملائنا <span className="neon-purple">الأبطال</span>
-          </h2>
-          <div className="cyber-divider max-w-xs mx-auto mt-4" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
-          {latestReviews.length > 0 ? latestReviews.map((review: any) => (
-            <div key={review.id} className="cyber-card cyber-corner p-6 flex flex-col relative overflow-hidden">
-              {/* Neon side bar */}
-              <div className="absolute top-0 right-0 h-full w-0.5 bg-gradient-to-b from-transparent via-[#a855f7] to-transparent" />
-
-              <div className="flex items-center gap-1 mb-4">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <Star key={i} className={`h-4 w-4 ${i <= review.rating ? "text-[#ffd700] fill-[#ffd700]" : "text-gray-700"}`} />
-                ))}
-              </div>
-
-              <p className="text-sm text-gray-300 font-mono mb-6 border-b border-[#a855f7]/20 pb-6 leading-relaxed flex-1">
-                &ldquo;{review.comment}&rdquo;
-              </p>
-
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-none cyber-corner bg-gradient-to-tr from-[#a855f7] to-[#00f5ff] flex items-center justify-center text-white font-bold text-sm overflow-hidden">
-                  {review.user?.image
-                    ? <img src={review.user.image} alt="" width={40} height={40} className="h-full w-full object-cover" />
-                    : (review.user?.name?.charAt(0) || "U")
-                  }
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white font-cyber">{review.user?.name || "مستخدم مجهول"}</h4>
-                  <p className="text-[10px] text-[#00ff41] font-mono uppercase tracking-wider">✓ مشترٍ موثق</p>
-                </div>
-              </div>
-            </div>
-          )) : (
-            <div className="col-span-3 text-center text-gray-500 font-mono py-10">
-              &gt;&gt; لا توجد تقييمات حتى الآن — كن أول من يقيم منتجاتنا
-            </div>
-          )}
-        </div>
-      </section>
+      <HomeReviewsSection initialReviews={latestReviews} />
       {/* ─── TRUST BADGES ─────────────────────────────────────── */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 mb-20">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
