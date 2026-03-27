@@ -14,60 +14,17 @@ import MaintenanceScreen from "@/components/MaintenanceScreen";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { getSiteUrl } from "@/lib/site-url";
 import { unstable_cache } from "next/cache";
-import { sanitizeImageUrlForNav } from "@/lib/image-url";
 
 const siteUrl = getSiteUrl()
 
 type NavbarCategory = {
   id: string
   name: string
-  slug: string | null
-  imageUrl: string | null
+  slug?: string | null
+  imageUrl?: string | null
   parentId: string | null
-  children: { id: string; name: string; slug: string | null; imageUrl: string | null }[]
+  children?: { id: string; name: string; slug?: string | null; imageUrl?: string | null }[]
 }
-
-const getCachedNavbarCategories = unstable_cache(
-  async (): Promise<NavbarCategory[]> => {
-    const categories = await prisma.category.findMany({
-      where: { parentId: null },
-      orderBy: [
-        { sortOrder: "asc" },
-        { createdAt: "desc" }
-      ],
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        imageUrl: true,
-        parentId: true,
-        children: {
-          orderBy: [
-            { sortOrder: "asc" },
-            { createdAt: "desc" }
-          ],
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            imageUrl: true
-          }
-        }
-      }
-    })
-
-    return categories.map((cat) => ({
-      ...cat,
-      imageUrl: sanitizeImageUrlForNav(cat.imageUrl),
-      children: cat.children.map((child) => ({
-        ...child,
-        imageUrl: sanitizeImageUrlForNav(child.imageUrl)
-      }))
-    }))
-  },
-  ["layout-navbar-categories"],
-  { tags: ["categories"] }
-)
 
 const getCachedMaintenanceMode = unstable_cache(
   async (): Promise<boolean> => {
@@ -126,20 +83,16 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const sessionPromise = auth()
-  const navbarPromise = getCachedNavbarCategories().catch((err) => {
-    console.error("Navbar categories prefetch failed:", err)
-    return [] as NavbarCategory[]
-  })
   const maintenancePromise = getCachedMaintenanceMode().catch((err) => {
     console.error("Maintenance check failed:", err)
     return false
   })
 
-  const [session, initialNavbarCategories, isMaintenanceMode] = await Promise.all([
+  const [session, isMaintenanceMode] = await Promise.all([
     sessionPromise,
-    navbarPromise,
     maintenancePromise
   ])
+  const initialNavbarCategories: NavbarCategory[] = []
   const showDevTools = session?.user?.role === "OWNER"
   const isLockedOut = isMaintenanceMode && !showDevTools;
 
@@ -209,6 +162,10 @@ export default async function RootLayout({
 
             // Only show loader on the exact homepage
             if (window.location.pathname !== "/") {
+              return;
+            }
+            // Skip visual loader on small screens to protect mobile LCP.
+            if (window.innerWidth < 1024) {
               return;
             }
 

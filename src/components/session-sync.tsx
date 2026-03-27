@@ -5,6 +5,7 @@ import { signOut, useSession } from "next-auth/react"
 import { usePathname, useRouter } from "next/navigation"
 
 const ADMIN_ROLES = ["DEV", "OWNER", "MANAGER", "SELLER", "SUPPORT"]
+const SESSION_SYNC_INTERVAL_MS = 15000
 
 export default function SessionSync() {
   const { data: session, status, update } = useSession()
@@ -77,7 +78,7 @@ export default function SessionSync() {
 
     const interval = window.setInterval(() => {
       void syncNow()
-    }, 2000)
+    }, SESSION_SYNC_INTERVAL_MS)
 
     document.addEventListener("visibilitychange", onVisibilityChange)
     window.addEventListener("focus", onWindowFocus)

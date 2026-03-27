@@ -29,7 +29,14 @@ export async function CategoryList() {
                                 {/* Full-Section Background Image Layer */}
                                 {(category.backgroundImageUrl || category.imageUrl) && (
                                     <div className="absolute inset-0 z-0">
-                                        <img src={category.backgroundImageUrl || category.imageUrl} alt="" className="w-full h-full object-cover opacity-40 shadow-[0_0_100px_rgba(0,0,0,0.8)]" />
+                                        <img
+                                            src={category.backgroundImageUrl || category.imageUrl}
+                                            alt=""
+                                            loading={idx === 0 ? "eager" : "lazy"}
+                                            decoding="async"
+                                            fetchPriority={idx === 0 ? "auto" : "low"}
+                                            className="w-full h-full object-cover opacity-40 shadow-[0_0_100px_rgba(0,0,0,0.8)]"
+                                        />
                                         <div className="absolute inset-0 bg-gradient-to-b from-[#010205] via-transparent to-[#010205]" />
                                         <div className="absolute inset-0 bg-gradient-to-r from-[#010205]/40 via-transparent to-[#010205]/40" />
                                         <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(168,85,247,0.01)_50%)] bg-[length:100%_4px] pointer-events-none" />
@@ -63,7 +70,14 @@ export async function CategoryList() {
                                                 <div className="relative shrink-0 group/img">
                                                     <div className={`absolute -inset-1 rounded-xl bg-gradient-to-r ${idx % 2 === 0 ? 'from-[#00f5ff] to-[#a855f7]' : 'from-[#a855f7] to-[#00f5ff]'} opacity-30 group-hover/img:opacity-70 blur-md transition duration-500`} />
                                                     <div className={`relative h-14 w-14 sm:h-24 sm:w-24 md:h-32 md:w-32 rounded-xl bg-transparent border-2 ${idx % 2 === 0 ? 'border-[#00f5ff]/70 shadow-[0_0_10px_rgba(0,245,255,0.5),inset_0_0_10px_rgba(0,245,255,0.5)] sm:shadow-[0_0_15px_rgba(0,245,255,0.5),inset_0_0_15px_rgba(0,245,255,0.5)]' : 'border-[#a855f7]/70 shadow-[0_0_10px_rgba(168,85,247,0.5),inset_0_0_10px_rgba(168,85,247,0.5)] sm:shadow-[0_0_15px_rgba(168,85,247,0.5),inset_0_0_15px_rgba(168,85,247,0.5)]'} overflow-hidden flex items-center justify-center group-hover/img:border-opacity-100 transition-all duration-500`}>
-                                                        <img src={category.imageUrl} alt={category.name} className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500" />
+                                                        <img
+                                                            src={category.imageUrl}
+                                                            alt={category.name}
+                                                            loading="lazy"
+                                                            decoding="async"
+                                                            fetchPriority="low"
+                                                            className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500"
+                                                        />
                                                         <div className="absolute inset-x-0 h-px bg-white/40 top-0 animate-[scan_2s_linear_infinite] pointer-events-none shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                                                     </div>
                                                 </div>
