@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import "./globals.css";
 
 import { Providers } from "@/components/providers";
@@ -39,23 +39,23 @@ const getCachedMaintenanceMode = unstable_cache(
 )
 
 export const metadata: Metadata = {
-  title: "Cipher Store | متجر سايفر",
-  description: "متجر الألعاب والبطاقات الرقمية الأول - اشترِ ألعابك المفضلة وبطاقات الشحن بأفضل الأسعار",
+  title: "Cipher Store | VP Valorant Turkey & Europe, Discord Nitro, Subscriptions",
+  description: "Buy VP Valorant Turkey & Europe, Discord Nitro, Steam wallets, digital subscriptions, and web development services.",
   metadataBase: new URL(siteUrl),
   icons: {
     icon: [
+      { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
       { url: "/favicon-96.png", sizes: "96x96", type: "image/png" },
       { url: "/favicon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon.png", sizes: "256x256", type: "image/png" },
-      { url: "/favicon.ico.png", sizes: "256x256", type: "image/png" }
+      { url: "/icon.png", sizes: "256x256", type: "image/png" }
     ],
     shortcut: ["/favicon.ico"],
-    apple: [{ url: "/favicon-192.png", sizes: "192x192" }]
+    apple: [{ url: "/favicon-192.png", sizes: "192x192", type: "image/png" }]
   },
   openGraph: {
-    title: "Cipher Store | متجر سايفر",
-    description: "متجر الألعاب والبطاقات الرقمية الأول - اشترِ ألعابك المفضلة وبطاقات الشحن بأفضل الأسعار",
+    title: "Cipher Store | VP Valorant Turkey & Europe, Discord Nitro, Subscriptions",
+    description: "Buy VP Valorant Turkey & Europe, Discord Nitro, Steam wallets, digital subscriptions, and web development services.",
     url: siteUrl,
     siteName: "Cipher Store",
     images: [
@@ -71,12 +71,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Cipher Store | متجر سايفر",
-    description: "متجر الألعاب والبطاقات الرقمية الأول",
+    title: "Cipher Store | VP Valorant Turkey & Europe, Discord Nitro, Subscriptions",
+    description: "VP Valorant Turkey/Europe, Discord Nitro, subscriptions, web development services.",
     images: ["/main-logo.png"],
   },
 }
-
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -97,7 +96,7 @@ export default async function RootLayout({
   const isLockedOut = isMaintenanceMode && !showDevTools;
 
   return (
-    <html lang="en" className="dark">
+    <html lang="ar" className="dark">
       <head>
         {/* Preload critical assets so they appear instantly */}
         <link rel="preload" href="/logo-96.webp" as="image" />
@@ -116,7 +115,7 @@ export default async function RootLayout({
       </head>
       <body className="antialiased min-h-screen flex flex-col pt-16 scanlines" suppressHydrationWarning>
         <NextTopLoader color="#00f5ff" showSpinner={false} shadow="0 0 10px #00f5ff,0 0 5px #00f5ff" />
-        {/* ─── CYBER LOADER (Server-rendered, appears BEFORE anything else) ─── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ CYBER LOADER (Server-rendered, appears BEFORE anything else) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <div
           id="cyber-loader"
           suppressHydrationWarning
@@ -244,3 +243,4 @@ export default async function RootLayout({
     </html>
   );
 }
+
