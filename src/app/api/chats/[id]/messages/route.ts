@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
-import { triggerBotSync } from "@/lib/bot-sync"
 
 const isPrivilegedStaff = (role: string) =>
   role === "DEV" || role === "OWNER" || role === "MANAGER"
@@ -110,26 +109,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       include: { sender: { select: { id: true, name: true, role: true, image: true } } }
     })
 
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord")
-      const participantInfo = chat.buyerId === session.user.id ? "User Message" : "Staff Response"
-      await sendDiscordLog("chat", {
-        title: `New ${participantInfo} in Chat #${id}`,
-        color: chat.buyerId === session.user.id ? 0x00f5ff : 0xa855f7,
-        fields: [
-          { name: "Sender", value: session.user?.email || "Unknown", inline: true },
-          { name: "Role", value: session.user?.role || "USER", inline: true },
-          { name: "Message", value: content, inline: false }
-        ]
-      })
-    } catch {}
+    // Discord log removed
 
     await prisma.chat.update({
       where: { id },
       data: { updatedAt: new Date() }
     })
 
-    await triggerBotSync()
+    // Bot sync removed
 
     return NextResponse.json(message)
   } catch (error) {

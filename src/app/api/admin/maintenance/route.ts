@@ -33,15 +33,7 @@ export async function POST(req: Request) {
     });
     revalidateTag("site-settings", "max")
 
-    // Optionally log to discord if he wants.
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord");
-      await sendDiscordLog("admin", {
-        title: isMaintenanceMode ? "🛠️ MAINTENANCE MODE ENABLED" : "🟢 MAINTENANCE MODE DISABLED",
-        color: isMaintenanceMode ? 0xff0000 : 0x00ff00,
-        fields: [{ name: "Triggered By", value: session.user.email || "Unknown OWNER", inline: true }]
-      });
-    } catch(e) {}
+    // Discord logging removed
 
     return NextResponse.json({ success: true, isMaintenanceMode: settings.isMaintenanceMode });
   } catch (error) {

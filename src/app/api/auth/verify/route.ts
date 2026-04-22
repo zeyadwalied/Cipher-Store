@@ -69,18 +69,7 @@ export async function POST(req: Request) {
         }
       })
 
-      try {
-        const { sendDiscordLog } = await import("@/lib/discord");
-        await sendDiscordLog("users", {
-          title: "🟢 New User Registered",
-          color: 0x22c55e, // Green
-          fields: [
-            { name: "Email", value: verification.email, inline: true },
-            { name: "Name", value: verification.name || "User", inline: true },
-            { name: "Role", value: role, inline: true }
-          ]
-        })
-      } catch (e) {}
+      // Discord log removed
     }
 
     // Clean up used verification codes

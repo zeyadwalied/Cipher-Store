@@ -93,17 +93,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             }
         })
 
-        try {
-            const { sendDiscordLog } = await import("@/lib/discord");
-            await sendDiscordLog("chat", {
-                title: `💬 Admin Reply in Order #${order.id}`,
-                color: 0xa855f7, // Purple for admin
-                fields: [
-                    { name: "Admin", value: session.user?.email || "Unknown", inline: true },
-                    { name: "Message", value: content, inline: false }
-                ]
-            })
-        } catch (e) { }
+        // Discord sync removed
 
         // Update chat updatedAt
         await prisma.chat.update({

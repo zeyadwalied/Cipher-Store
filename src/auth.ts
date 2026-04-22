@@ -149,18 +149,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   events: {
     async signIn({ user }) {
-      try {
-        const { sendDiscordLog } = await import("@/lib/discord");
-        await sendDiscordLog("users", {
-          title: "🔑 User Logged In",
-          color: 0x22c55e, // Green
-          fields: [
-            { name: "Email", value: user.email || "Unknown", inline: true },
-            { name: "Name", value: user.name || "Unknown", inline: true },
-            { name: "Role", value: user.role || "USER", inline: true }
-          ]
-        })
-      } catch (e) { }
+      // Discord logging removed
     }
   }
 })

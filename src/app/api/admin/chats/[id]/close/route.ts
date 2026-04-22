@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
-import { triggerBotSync } from "@/lib/bot-sync"
 
 export const dynamic = "force-dynamic"
 
@@ -19,7 +18,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       data: { status: 'CLOSED_BY_WEB' }
     })
 
-    await triggerBotSync();
+    // Bot sync removed
 
     return NextResponse.json(chat)
   } catch (error) {

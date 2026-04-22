@@ -58,19 +58,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
     })
 
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord");
-      const product = await prisma.product.findUnique({ where: { id }, select: { name: true } });
-      await sendDiscordLog("products", {
-        title: "🟢 New Code Added",
-        color: 0x22c55e, // Green
-        fields: [
-          { name: "Product", value: product?.name || id, inline: true },
-          { name: "Code Snippet", value: data.substring(0, 50) + (data.length > 50 ? "..." : ""), inline: false },
-          { name: "Admin", value: session?.user?.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) { }
+    // Discord log removed
 
     return NextResponse.json(newStock)
   } catch (error) {
@@ -96,19 +84,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         where: { productId: id }
       })
 
-      try {
-        const { sendDiscordLog } = await import("@/lib/discord");
-        const product = await prisma.product.findUnique({ where: { id }, select: { name: true } });
-        await sendDiscordLog("products", {
-          title: "🔴 ALL Codes Deleted",
-          color: 0xef4444, // Red
-          fields: [
-            { name: "Product", value: product?.name || id, inline: true },
-            { name: "Action", value: "Bulk Delete ALL", inline: true },
-            { name: "Admin", value: session?.user?.email || "Unknown", inline: true }
-          ]
-        })
-      } catch (e) { }
+      // Discord log removed
 
       return new NextResponse("All deleted", { status: 200 })
     }
@@ -118,19 +94,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         where: { productId: id, isUsed: false }
       })
 
-      try {
-        const { sendDiscordLog } = await import("@/lib/discord");
-        const product = await prisma.product.findUnique({ where: { id }, select: { name: true } });
-        await sendDiscordLog("products", {
-          title: "🔴 ALL Unused Codes Deleted",
-          color: 0xef4444, // Red
-          fields: [
-            { name: "Product", value: product?.name || id, inline: true },
-            { name: "Action", value: "Bulk Delete Unused", inline: true },
-            { name: "Admin", value: session?.user?.email || "Unknown", inline: true }
-          ]
-        })
-      } catch (e) { }
+      // Discord log removed
 
       return new NextResponse("All unused deleted", { status: 200 })
     }
@@ -140,19 +104,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       where: { id: stockId, productId: id }
     })
 
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord");
-      const product = await prisma.product.findUnique({ where: { id }, select: { name: true } });
-      await sendDiscordLog("products", {
-        title: "🔴 Code Deleted",
-        color: 0xef4444, // Red
-        fields: [
-          { name: "Product", value: product?.name || id, inline: true },
-          { name: "Stock ID", value: stockId, inline: true },
-          { name: "Admin", value: session?.user?.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) { }
+    // Discord log removed
 
     return new NextResponse("Deleted successfully", { status: 200 })
   } catch (error) {

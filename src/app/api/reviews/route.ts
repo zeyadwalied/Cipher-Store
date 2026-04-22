@@ -154,20 +154,7 @@ export async function POST(req: Request) {
     revalidateTag("reviews", "max")
     revalidateTag(`product-${productId}`, "max")
 
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord")
-      await sendDiscordLog("reviews", {
-        title: `New Review: ${review.product.name}`,
-        color: 0x22c55e,
-        fields: [
-          { name: "User", value: review.user?.email || review.user?.name || "Unknown", inline: true },
-          { name: "Rating", value: `${review.rating}/5`, inline: true },
-          { name: "Comment", value: review.comment || "No comment provided", inline: false }
-        ]
-      })
-    } catch {
-      // Logging failures should not break review creation.
-    }
+    // Discord logging removed
 
     return NextResponse.json(review, { status: 201 })
   } catch (error) {

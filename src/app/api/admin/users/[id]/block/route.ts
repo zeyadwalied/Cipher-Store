@@ -48,17 +48,7 @@ export async function PUT(
       data: { isBlocked }
     })
 
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord");
-      await sendDiscordLog("admin", {
-        title: isBlocked ? "🚫 User Blocked" : "✅ User Unblocked",
-        color: isBlocked ? 0xff0000 : 0x00ff00,
-        fields: [
-          { name: "Target User", value: targetUser?.email || userId, inline: true },
-          { name: "Admin", value: session.user.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) { }
+    // Discord sync removed
 
     return NextResponse.json({ success: true })
   } catch (error) {

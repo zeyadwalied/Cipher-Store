@@ -48,19 +48,7 @@ export async function POST(req: Request) {
     })
     revalidateTag('categories', 'max')
 
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord");
-      const session = await auth();
-      await sendDiscordLog("products", {
-        title: "🟢 New Category Created",
-        color: 0x22c55e, // Green
-        fields: [
-          { name: "Name", value: name, inline: true },
-          { name: "Slug", value: slug, inline: true },
-          { name: "Admin", value: session?.user?.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) { }
+    // Discord log removed
 
     return NextResponse.json(category, { status: 201 })
   } catch (error) {
@@ -90,18 +78,7 @@ export async function PUT(req: Request) {
     revalidateTag('categories', 'max')
     revalidateTag('products', 'max')
 
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord");
-      const session = await auth();
-      await sendDiscordLog("products", {
-        title: "🔵 Category Updated",
-        color: 0x3b82f6, // Blue
-        fields: [
-          { name: "Name", value: name, inline: true },
-          { name: "Admin", value: session?.user?.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) { }
+    // Discord log removed
 
     return NextResponse.json(category, { status: 200 })
   } catch (error) {
@@ -120,18 +97,7 @@ export async function DELETE(req: Request) {
     revalidateTag('categories', 'max')
     revalidateTag('products', 'max')
 
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord");
-      const session = await auth();
-      await sendDiscordLog("products", {
-        title: "🔴 Category Deleted",
-        color: 0xef4444, // Red
-        fields: [
-          { name: "Category ID", value: id, inline: true },
-          { name: "Admin", value: session?.user?.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) { }
+    // Discord log removed
 
     return new NextResponse("Deleted", { status: 200 })
   } catch (error) {

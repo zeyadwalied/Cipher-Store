@@ -38,21 +38,13 @@ const SERVICES_DATA = [
     packages: ['استضافة المواقع (سنة)', 'سيرفر VPS خاص', 'حجز دومين']
   },
   {
-    id: "discord-setup",
+    id: "custom-dev",
     icon: Layers,
-    title: 'تنظيم سيرفر ديسكورد',
-    desc: 'إعداد وتنظيم احترافي',
-    color: '#5865F2',
-    packages: ['سيرفر أساسي', 'سيرفر احترافي مع بوتات', 'سيرفر مجتمعي ضخم']
-  },
-  {
-    id: "discord-bot",
-    icon: Cpu,
-    title: 'تطوير بوت ديسكورد',
-    desc: 'بوتات مخصصة وذكية',
-    color: '#ED4245',
-    packages: ['بوت حماية وحظر', 'بوت نظام الاقتصادي والألعاب', 'بوت مخصص بالكامل']
-  },
+    title: 'تطوير برمجي مخصص',
+    desc: 'حلول برمجية متكاملة',
+    color: '#ff0055',
+    packages: ['برمجة سكربتات خاصة', 'ربط أنظمة (API)', 'حل مشاكل تقنية معقدة']
+  }
 ]
 
 export function ServiceOrderModal() {

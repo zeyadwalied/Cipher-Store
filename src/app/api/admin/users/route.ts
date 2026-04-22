@@ -42,19 +42,7 @@ export async function POST(req: Request) {
       }
     })
 
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord");
-      await sendDiscordLog("users", {
-        title: "🟢 Manual User Created",
-        color: 0x22c55e, // Green
-        fields: [
-          { name: "New User Email", value: email, inline: true },
-          { name: "New User Name", value: name, inline: true },
-          { name: "Role Assigned", value: role, inline: true },
-          { name: "Created By (Admin)", value: requester.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) { }
+    // Discord logging removed
 
     return NextResponse.json({ success: true, user: { id: user.id, email: user.email } })
 

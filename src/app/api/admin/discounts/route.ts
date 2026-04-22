@@ -58,20 +58,6 @@ export async function POST(req: Request) {
       }
     })
 
-    try {
-      const { sendDiscordLog } = await import("@/lib/discord");
-      await sendDiscordLog("discounts", {
-        title: "🏷️ New Discount Created",
-        color: 0x00f5ff,
-        fields: [
-          { name: "Name", value: name, inline: true },
-          { name: "Type", value: type, inline: true },
-          { name: "Value", value: `${value}${isPercentage ? "%" : "$"}`, inline: true },
-          { name: "Admin", value: requester.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) { }
-
     revalidateTag('discounts', 'max')
     revalidateTag('products', 'max')
     return NextResponse.json(discount)

@@ -47,18 +47,7 @@ export async function PUT(
             data: { role }
         })
 
-        try {
-            const { sendDiscordLog } = await import("@/lib/discord");
-            await sendDiscordLog("admin", {
-                title: "🛡️ User Role Changed",
-                color: 0x00f5ff,
-                fields: [
-                    { name: "Target User", value: targetUser?.email || userId, inline: true },
-                    { name: "New Role", value: role, inline: true },
-                    { name: "Admin", value: session.user.email || "Unknown", inline: true }
-                ]
-            })
-        } catch (e) { }
+        // Discord sync removed
 
         return NextResponse.json({ success: true })
     } catch (error) {

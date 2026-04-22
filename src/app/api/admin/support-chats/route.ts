@@ -45,18 +45,7 @@ export async function PUT(req: Request) {
         include: { buyer: { select: { email: true } } }
       })
 
-      try {
-        const { sendDiscordLog } = await import("@/lib/discord");
-        await sendDiscordLog("support", {
-          title: "🙋 Support Chat Claimed",
-          color: 0xa855f7, // Purple for admin
-          fields: [
-            { name: "Admin", value: user.email || "Unknown", inline: true },
-            { name: "Customer", value: chat.buyer?.email || "Unknown", inline: true },
-            { name: "Chat ID", value: chatId, inline: true }
-          ]
-        })
-      } catch (e) {}
+      // Discord sync removed
 
       return NextResponse.json(chat)
     }
@@ -68,18 +57,7 @@ export async function PUT(req: Request) {
         include: { buyer: { select: { email: true } } }
       })
 
-      try {
-        const { sendDiscordLog } = await import("@/lib/discord");
-        await sendDiscordLog("support", {
-          title: "✅ Support Chat Resolved",
-          color: 0x00ff00, // Green
-          fields: [
-            { name: "Admin", value: user.email || "Unknown", inline: true },
-            { name: "Customer", value: chat.buyer?.email || "Unknown", inline: true },
-            { name: "Chat ID", value: chatId, inline: true }
-          ]
-        })
-      } catch (e) {}
+      // Discord sync removed
 
       return NextResponse.json(chat)
     }

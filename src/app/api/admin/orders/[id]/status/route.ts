@@ -2,8 +2,6 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
 import nodemailer from "nodemailer"
-import { sendDiscordLog } from "@/lib/discord"
-import { triggerBotSync } from "@/lib/bot-sync"
 
 // Helper to configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -45,22 +43,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       where: { id },
       data: { status, confirmationSource: 'WEBSITE' }
     })
-
-    const statusTitle = "⚙️ Order Status Updated";
-    const statusColor = 0xa855f7; // Purple
-
-    try {
-      await sendDiscordLog("admin", {
-        title: statusTitle,
-        color: statusColor,
-        fields: [
-          { name: "Order ID", value: id, inline: true },
-          { name: "Customer", value: order.user?.email || "Unknown", inline: true },
-          { name: "New Status", value: status, inline: true },
-          { name: "Admin", value: session.user?.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) {}
 
     // If changing to COMPLETED, dispatch the email
     if (status === "COMPLETED" && order.user?.email) {
@@ -233,7 +215,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       }
     }
 
-    await triggerBotSync();
+    // Bot sync removed
 
     return NextResponse.json({ success: true, status })
   } catch (error) {

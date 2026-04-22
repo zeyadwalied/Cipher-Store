@@ -87,19 +87,6 @@ export async function DELETE(
             await tx.user.delete({ where: { id: userId } })
         })
 
-        try {
-            const { sendDiscordLog } = await import("@/lib/discord");
-            await sendDiscordLog("admin", {
-                title: "🗑️ User Deleted",
-                color: 0xff0000,
-                fields: [
-                    { name: "Deleted User Email", value: userToDelete.email || "Unknown", inline: true },
-                    { name: "Deleted By", value: user.email || "Unknown", inline: true },
-                    { name: "Role", value: user.role, inline: true }
-                ]
-            })
-        } catch (e) { }
-
         return NextResponse.json({ message: "User deleted successfully" })
     } catch (error: any) {
         console.error("[USER_DELETE]", error)

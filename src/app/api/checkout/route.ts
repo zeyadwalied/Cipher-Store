@@ -2,9 +2,7 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
 import { isSiteInMaintenanceMode } from "@/lib/maintenance"
-import { createOrderTicket } from "@/lib/discord-ticket"
 import { calculateDiscount } from "@/lib/discountEngine"
-import { sendDiscordLog } from "@/lib/discord"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
 
 export async function POST(req: Request) {
@@ -177,80 +175,9 @@ export async function POST(req: Request) {
     if (["VODAFONE_CASH", "VODAFONE", "INSTAPAY", "PAYPAL"].includes(methodStr.toUpperCase())) {
       redirectUrl = `/checkout/payment/${result.order.id}`
     }
-
-    // Create Discord ticket channel INSTANTLY via REST API (no bot polling needed!)
-    try {
-      // Get product names for the embed
-      const orderWithItems = await prisma.order.findUnique({
-        where: { id: result.order.id },
-        include: { items: { include: { product: { select: { name: true } } } } }
-      });
-      const ticketItems = orderWithItems?.items.map(i => ({
-        name: i.product.name,
-        quantity: i.quantity
-      })) || [];
-
-      const channelId = await createOrderTicket({
-        orderId: result.order.id,
-        customerName: currentUser.name || "Customer",
-        customerEmail: currentUser.email || "Unknown",
-        total: result.order.total,
-        paymentMethod: paymentMethod || "VODAFONE_CASH",
-        items: ticketItems,
-      });
-
-      // Save the channel ID to both Order and Chat so bot can manage it later
-      if (channelId) {
-        await prisma.order.update({ where: { id: result.order.id }, data: { discordChannelId: channelId } });
-        await prisma.chat.update({ where: { id: result.chat.id }, data: { discordChannelId: channelId } });
-      }
-    } catch (ticketErr) {
-      console.error('Discord ticket creation failed (non-blocking):', ticketErr);
-    }
-
-    // Log the order to Discord
-    try {
-      await sendDiscordLog("orders", {
-        title: "🛒 New Order Created",
-        color: 0x00f5ff, // Cyan
-        fields: [
-          { name: "Order ID", value: result.order.id, inline: true },
-          { name: "Customer", value: currentUser.email || "Unknown", inline: true },
-          { name: "Amount", value: `$${result.order.total.toFixed(2)}`, inline: true },
-          { name: "Method", value: methodStr, inline: true }
-        ]
-      });
-
-      // Log if a discount was applied
-      const wasDiscounted = enhancedItems.some(ei => {
-        const originalItem = items.find((i: any) => i.id === ei.productId);
-        return originalItem && ei.price < originalItem.price;
-      });
-
-      if (wasDiscounted) {
-        await sendDiscordLog("discounts", {
-          title: "🏷️ Discount Applied in Order",
-          color: 0x0ea5e9,
-          fields: [
-            { name: "Order ID", value: result.order.id, inline: true },
-            { name: "Customer", value: currentUser.email || "Unknown", inline: true }
-          ]
-        })
-      }
-    } catch (err) {
-      console.error("Failed to log order to discord", err)
-    }
-
     return NextResponse.json({ url: redirectUrl })
   } catch (error: any) {
     console.error("Checkout error:", error)
-    try {
-      await sendDiscordLog("errors", {
-        title: "❌ API Error: /api/checkout",
-        color: 0xff0000,
-        description: error.message || String(error)
-      })
-    } catch (e) { }
     return new NextResponse("Internal Server Error", { status: 500 })
   }
 }

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { auth } from "@/auth"
-import { triggerBotSync } from "@/lib/bot-sync"
 import { getOrCreateOngoingSupportChat } from "@/lib/support-chat"
 
 export async function GET(req: Request) {
@@ -81,8 +80,7 @@ export async function POST(req: Request) {
 
       if (!chat) return new NextResponse("Not Found", { status: 404 })
 
-      // Wake up Discord Bot instantly
-      await triggerBotSync()
+      // Bot sync removed
 
       return NextResponse.json(chat)
     }

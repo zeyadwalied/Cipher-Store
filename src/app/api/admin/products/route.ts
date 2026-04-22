@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { revalidateTag } from "next/cache"
-import { sendDiscordLog } from "@/lib/discord"
 import prisma from "@/lib/prisma"
 import { getAdminProductsData } from "@/lib/admin-products"
 
@@ -64,29 +63,13 @@ export async function POST(req: Request) {
     revalidateTag('products', 'max')
     revalidateTag('categories', 'max') // Home page categorisation might change
 
-    try {
-      await sendDiscordLog("products", {
-        title: "🟢 New Product Created",
-        color: 0x22c55e, // Green
-        fields: [
-          { name: "Product Name", value: product.name, inline: true },
-          { name: "Price", value: `$${product.price}`, inline: true },
-          { name: "Admin", value: user.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) { }
+    // Discord log removed
 
     return NextResponse.json(product, { status: 201 })
   } catch (error: any) {
     console.error("Create product error:", error?.message, error)
     if (error) {
-      try {
-        await sendDiscordLog("errors", {
-          title: "❌ API Error: /api/admin/products (POST)",
-          color: 0xff0000,
-          description: error?.message || String(error)
-        })
-      } catch (e) { }
+    // Discord log removed
     }
     return NextResponse.json({ error: "Failed to create product" }, { status: 500 })
   }
@@ -138,28 +121,12 @@ export async function PUT(req: Request) {
     revalidateTag(`product-${id}`, 'max')
     revalidateTag('categories', 'max')
 
-    try {
-      await sendDiscordLog("products", {
-        title: "🔵 Product Updated",
-        color: 0x3b82f6, // Blue
-        fields: [
-          { name: "Product Name", value: product.name, inline: true },
-          { name: "Price", value: `$${product.price}`, inline: true },
-          { name: "Admin", value: user.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) { }
+    // Discord log removed
 
     return NextResponse.json(product, { status: 200 })
   } catch (error: any) {
     console.error("Update product error:", error?.message, error)
-    try {
-      await sendDiscordLog("errors", {
-        title: "❌ API Error: /api/admin/products (PUT)",
-        color: 0xff0000,
-        description: error?.message || String(error)
-      })
-    } catch (e) { }
+    // Discord log removed
     return NextResponse.json({ error: "Failed to update product" }, { status: 500 })
   }
 }
@@ -189,17 +156,7 @@ export async function DELETE(req: Request) {
     revalidateTag(`product-${id}`, 'max')
     revalidateTag('categories', 'max')
 
-    try {
-      await sendDiscordLog("products", {
-        title: "🔴 Product Deleted",
-        color: 0xef4444, // Red
-        fields: [
-          { name: "Product ID", value: id, inline: true },
-          { name: "Name", value: existingProduct.name, inline: true },
-          { name: "Admin", value: user.email || "Unknown", inline: true }
-        ]
-      })
-    } catch (e) { }
+    // Discord log removed
 
     return new NextResponse("Deleted", { status: 200 })
   } catch (error) {
