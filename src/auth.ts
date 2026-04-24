@@ -3,6 +3,15 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import prisma from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { CredentialsSignin } from "next-auth"
+
+class CustomAuthError extends CredentialsSignin {
+  code: string;
+  constructor(code: string) {
+    super();
+    this.code = code;
+  }
+}
 
 declare module "next-auth" {
   interface User {
@@ -60,7 +69,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // 10 login attempts per 15 minutes per IP
           const { limited } = rateLimit(`login:${ip}`, { maxAttempts: 10, windowMs: 15 * 60 * 1000 });
           if (limited) {
-            throw new Error("Too many login attempts. Please try again later.");
+            throw new CustomAuthError("Too many login attempts. Please try again later.");
           }
         } catch (e: any) {
           if (e.message.includes("Too many login attempts")) throw e;
@@ -83,13 +92,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!isProtected && dbUser.isBlocked) {
           // In Auth.js v5, we should throw a specific error or handle it in the callback
-          throw new Error("BLOCKED:تم حظر حسابك، يرجى التواصل مع المسؤول لمزيد من المعلومات")
+          throw new CustomAuthError("BLOCKED:تم حظر حسابك، يرجى التواصل مع المسؤول لمزيد من المعلومات")
         }
 
         // Maintain security: Require email verification for regular Users
         // Admins/Staff created manually are exempt to prevent blocking existing management
         if (!isProtected && !user.emailVerified && (user as any).role === "USER") {
-          throw new Error("Your email is not verified. Please check your inbox.")
+          throw new CustomAuthError("Your email is not verified. Please check your inbox.")
         }
 
         const isPasswordValid = await bcrypt.compare(
