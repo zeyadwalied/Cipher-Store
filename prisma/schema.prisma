@@ -15,168 +15,155 @@ model User {
   emailVerified DateTime?
   password      String?
   image         String?
-  role          String    @default("USER") // 'USER', 'SUPPORT', 'SELLER', 'MANAGER', 'OWNER', 'DEV'
+  role          String    @default("USER")
   isBlocked     Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  orders        Order[]
-  products      Product[] // For sellers
+  assignedChats Chat[]    @relation("AssignedChats")
   chatsAsBuyer  Chat[]    @relation("BuyerChats")
   chatsAsSeller Chat[]    @relation("SellerChats")
-  assignedChats Chat[]    @relation("AssignedChats")
   messages      Message[]
+  orders        Order[]
+  products      Product[]
   reviews       Review[]
 }
 
 model Category {
-  id              String     @id @default(cuid())
-  slug            String?    @unique
-  name            String
-  description     String?
-  imageUrl        String?    // Category Thumbnail
-  backgroundImageUrl String? // Category Section Background
-  isAutomaticOnly Boolean    @default(false)
-  sortOrder       Int        @default(0)
-  
-  // Hierarchy
-  parentId        String?
-  parent          Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children        Category[] @relation("CategoryHierarchy")
-
-  products        Product[]
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id                 String     @id @default(cuid())
+  slug               String?    @unique
+  name               String
+  description        String?
+  imageUrl           String?
+  backgroundImageUrl String?
+  isAutomaticOnly    Boolean    @default(false)
+  sortOrder          Int        @default(0)
+  parentId           String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  parent             Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children           Category[] @relation("CategoryHierarchy")
+  products           Product[]
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  slug        String?  @unique
-  name        String
-  description String
-  price       Float
-  image        String?
-  categoryId   String
-  category     Category     @relation(fields: [categoryId], references: [id])
-  deliveryType String       @default("MANUAL") // "MANUAL" or "AUTOMATIC"
-  stockQuantity Int?        // Null means unlimited stock. Integer means limited stock.
-  stockItems   StockItem[]
-  sellerId    String?
-  seller      User?    @relation(fields: [sellerId], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  orderItems  OrderItem[]
-  reviews     Review[]
+  id            String      @id @default(cuid())
+  slug          String?     @unique
+  name          String
+  description   String
+  price         Float
+  image         String?
+  categoryId    String
+  deliveryType  String      @default("MANUAL")
+  stockQuantity Int?
+  sellerId      String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  orderItems    OrderItem[]
+  category      Category    @relation(fields: [categoryId], references: [id])
+  seller        User?       @relation(fields: [sellerId], references: [id])
+  reviews       Review[]
+  stockItems    StockItem[]
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  userId        String?
-  user          User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  status        String      @default("PENDING") // PENDING, PAID, COMPLETED, CANCELLED
-  total         Float
-  paymentMethod String      // VODAFONE_CASH, INSTAPAY, PAYPAL, CREDIT_CARD
-  
-  // Manual Payment Verification Fields
-  senderPhoneNumber String?
-  receiptImageUrl   String?
-  discordChannelId  String?
-  confirmationSource String? // 'DISCORD' or 'WEBSITE'
-  confirmedByName    String? // Discord username who confirmed
-  
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  items         OrderItem[]
-  chat          Chat?
+  id                 String      @id @default(cuid())
+  userId             String?
+  status             String      @default("PENDING")
+  total              Float
+  paymentMethod      String
+  senderPhoneNumber  String?
+  receiptImageUrl    String?
+  discordChannelId   String?
+  confirmationSource String?
+  confirmedByName    String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  chat               Chat?
+  user               User?       @relation(fields: [userId], references: [id])
+  items              OrderItem[]
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-  quantity    Int
-  price       Float
-  stockItems  StockItem[]
+  id         String      @id @default(cuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  price      Float
+  order      Order       @relation(fields: [orderId], references: [id])
+  product    Product     @relation(fields: [productId], references: [id])
+  stockItems StockItem[]
 }
 
 model StockItem {
   id          String     @id @default(cuid())
   productId   String
-  product     Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  data        String     // The actual account details or CD key
+  data        String
   isUsed      Boolean    @default(false)
   orderItemId String?
-  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
+  product     Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Chat {
-  id           String    @id @default(cuid())
-  type         String    @default("SUPPORT") // 'SUPPORT' or 'ORDER'
-  orderId      String?   @unique
-  order        Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  buyerId      String?
-  buyer        User?      @relation("BuyerChats", fields: [buyerId], references: [id], onDelete: SetNull)
-  sellerId     String?
-  seller       User?     @relation("SellerChats", fields: [sellerId], references: [id], onDelete: SetNull)
-  assignedToId String?
-  assignedTo   User?     @relation("AssignedChats", fields: [assignedToId], references: [id], onDelete: SetNull)
-  status       String    @default("ONGOING") // 'ONGOING' or 'SUCCESS'
+  id               String    @id @default(cuid())
+  type             String    @default("SUPPORT")
+  orderId          String?   @unique
+  buyerId          String?
+  sellerId         String?
+  assignedToId     String?
+  status           String    @default("ONGOING")
   discordChannelId String?
-  messages     Message[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  assignedTo       User?     @relation("AssignedChats", fields: [assignedToId], references: [id])
+  buyer            User?     @relation("BuyerChats", fields: [buyerId], references: [id])
+  order            Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  seller           User?     @relation("SellerChats", fields: [sellerId], references: [id])
+  messages         Message[]
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  chatId    String
-  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  senderId  String?  // Null if AI
-  sender    User?    @relation(fields: [senderId], references: [id], onDelete: SetNull)
-  content   String
-  isAi      Boolean  @default(false)
+  id               String   @id @default(cuid())
+  chatId           String
+  senderId         String?
+  content          String
+  isAi             Boolean  @default(false)
   discordMessageId String?
-  createdAt DateTime @default(now())
+  createdAt        DateTime @default(now())
+  chat             Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender           User?    @relation(fields: [senderId], references: [id])
 }
 
 model Review {
   id        String   @id @default(cuid())
-  rating    Int      // 1 to 5
+  rating    Int
   comment   String?
   userId    String?
-  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Discount {
-  id                  String    @id @default(cuid())
+  id                  String   @id @default(cuid())
   name                String
-  type                String    // 'SINGLE', 'CATEGORY', 'GENERAL', 'MIXED'
+  type                String
   value               Float
-  isPercentage        Boolean   @default(true)
-  isActive            Boolean   @default(true)
-  
-  // Targets for SINGLE or CATEGORY
+  isPercentage        Boolean  @default(true)
+  isActive            Boolean  @default(true)
   targetProductId     String?
   targetCategoryId    String?
-  
-  // Excluders for GENERAL (stored as JSON arrays in string format for SQLite)
   excludedProductIds  String?
   excludedCategoryIds String?
-  
-  // Logical conditions for MIXED (e.g., must buy from Product X AND Category Y)
-  mixedConditionType  String?   // 'AND' or 'OR'
+  mixedConditionType  String?
   mixedProductId      String?
   mixedCategoryId     String?
-
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model PasswordReset {
@@ -187,6 +174,7 @@ model PasswordReset {
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
 model EmailVerification {
   id        String   @id @default(cuid())
   email     String
@@ -202,4 +190,3 @@ model SiteSettings {
   isMaintenanceMode Boolean  @default(false)
   updatedAt         DateTime @updatedAt
 }
-

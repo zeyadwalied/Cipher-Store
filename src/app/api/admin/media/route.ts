@@ -1,43 +1,14 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
-import prisma from "@/lib/prisma"
-import { optimizeImageBufferToDataUrl } from "@/lib/image-optimizer"
 
 export const dynamic = "force-dynamic"
 
-// Since Vercel has a read-only filesystem, we store images as Base64 data URLs.
-// New uploads are optimized first to reduce payload size.
-
-// GET - list all uploaded images (stored in products as image field)
+// GET - We no longer load images from the DB (Media Library disabled to save DB space)
 export async function GET() {
-  try {
-    const session = await auth()
-    if (!session || !["OWNER", "MANAGER", "SELLER"].includes(session.user.role)) {
-      return new NextResponse("Unauthorized", { status: 401 })
-    }
-
-    const products = await prisma.product.findMany({
-      where: { image: { not: null } },
-      select: { id: true, name: true, image: true },
-      orderBy: { updatedAt: "desc" }
-    })
-
-    const images = products
-      .filter((p): p is { id: string; name: string; image: string } => typeof p.image === "string")
-      .map((p) => ({
-        name: p.name,
-        url: p.image,
-        productId: p.id,
-      }))
-
-    return NextResponse.json({ images })
-  } catch (error) {
-    console.error("Media GET error:", error)
-    return new NextResponse("Internal Server Error", { status: 500 })
-  }
+  return NextResponse.json({ images: [] })
 }
 
-// POST - upload a new image (auto-optimizes to WebP/AVIF then stores as data URL)
+// POST - Upload a new image to a free image hosting service (catbox.moe) to save DB space
 export async function POST(req: Request) {
   try {
     const session = await auth()
@@ -60,21 +31,37 @@ export async function POST(req: Request) {
       return new NextResponse("File too large (max 20MB)", { status: 400 })
     }
 
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const optimized = await optimizeImageBufferToDataUrl(buffer)
+    // Upload to Catbox.moe for permanent direct image hosting
+    const catboxForm = new FormData()
+    catboxForm.append("reqtype", "fileupload")
+    catboxForm.append("fileToUpload", file)
+
+    const response = await fetch("https://catbox.moe/user/api.php", {
+      method: "POST",
+      body: catboxForm,
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload to external host: ${response.statusText}`)
+    }
+
+    const url = await response.text()
+
+    if (!url.startsWith("http")) {
+      throw new Error("Invalid response from host: " + url)
+    }
 
     return NextResponse.json(
-      { url: optimized.dataUrl, name: file.name, mimeType: optimized.mimeType, bytes: optimized.bytes },
+      { url, name: file.name },
       { status: 201 }
     )
   } catch (error) {
     console.error("Media upload error:", error)
-    return new NextResponse("Internal Server Error", { status: 500 })
+    return new NextResponse("Internal Server Error: " + (error as any).message, { status: 500 })
   }
 }
 
-// DELETE - no-op since we no longer store files on disk
+// DELETE - no-op
 export async function DELETE() {
   return new NextResponse("OK", { status: 200 })
 }
