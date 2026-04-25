@@ -9,7 +9,7 @@
  */
 
 const PROTECTED_EMAILS: string[] = [
-
+  "zezo.magd30@gmail.com",
   "zeyadmagd373@gmail.com"
 ]
 
