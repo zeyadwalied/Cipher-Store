@@ -45,20 +45,39 @@ export async function POST(req: Request) {
     }
 
     // Verify products, verify stock, and calculate total
+    // 1. Fetch all products in one batch query to prevent sequential N+1 slowdowns
+    const productIds = items.map((i: any) => i.id)
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } }
+    })
+
+    // Create a map for fast lookup
+    const productsMap = new Map(products.map(p => [p.id, p]))
+
+    // 2. Fetch all required automatic stock items in one batch query
+    const automaticProductIds = products.filter(p => p.deliveryType === "AUTOMATIC").map(p => p.id)
+    const allAvailableStock = await prisma.stockItem.findMany({
+      where: { productId: { in: automaticProductIds }, isUsed: false }
+    })
+
+    // Group available stock by product
+    const stockByProduct: Record<string, any[]> = {}
+    for (const stock of allAvailableStock) {
+      if (!stockByProduct[stock.productId]) stockByProduct[stock.productId] = []
+      stockByProduct[stock.productId].push(stock)
+    }
+
     let total = 0
     const enhancedItems: { productId: string; quantity: number; price: number; stockItemsToReserve: string[], requiresStockDecrement: boolean }[] = []
 
     const activeDiscounts = await (prisma as any).discount.findMany({ where: { isActive: true } })
 
-    // We will find the seller ID from the first product to assign to the chat
     let firstSellerId = null
 
     for (const item of items) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.id }
-      })
+      const product = productsMap.get(item.id)
       if (!product) {
-        return new NextResponse(`Product ${item.id} not found`, { status: 400 })
+        return new NextResponse(`عذراً، المنتج لم يعد متوفراً في المتجر. يرجى إزالة المنتجات الغير متوفرة من السلة والمحاولة مرة أخرى أو تحديث الصفحة.`, { status: 400 })
       }
       if (!firstSellerId && product.sellerId) {
         firstSellerId = product.sellerId
@@ -69,20 +88,17 @@ export async function POST(req: Request) {
 
       let stockItemsToReserve: string[] = []
 
-      // Stock Verification logic -> Check BOTH Automatic and stockQuantity
-
       // 1. If it's AUTOMATIC, ensure we have enough StockItems
       if (product.deliveryType === "AUTOMATIC") {
-        const availableStock = await prisma.stockItem.findMany({
-          where: { productId: product.id, isUsed: false },
-          take: item.quantity
-        })
+        const availableStock = stockByProduct[product.id] || []
 
         if (availableStock.length < item.quantity) {
           return new NextResponse(`Not enough stock for ${product.name}. Only ${availableStock.length} left.`, { status: 400 })
         }
 
-        stockItemsToReserve = availableStock.map(s => s.id)
+        // Consume stock from the in-memory array to reserve it
+        const reservedList = availableStock.splice(0, item.quantity)
+        stockItemsToReserve = reservedList.map((s: any) => s.id)
       }
 
       // 2. If it has a stockQuantity limit (integer), ensure we have enough units

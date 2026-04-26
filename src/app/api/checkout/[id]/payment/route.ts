@@ -28,31 +28,51 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return new NextResponse("Missing fields (phone or image)", { status: 400 })
     }
 
-    // Upload receipt to Catbox.moe for direct image hosting
-    const catboxForm = new FormData()
-    catboxForm.append("reqtype", "fileupload")
-    
-    // Explicitly create a Blob and pass the filename to prevent 'Precondition Failed' errors
-    const fileBytes = await receiptImage.arrayBuffer()
-    const fileBlob = new Blob([fileBytes], { type: receiptImage.type || "image/png" })
-    catboxForm.append("fileToUpload", fileBlob, receiptImage.name || 'receipt.png')
+    let receiptImageUrl = ""
 
-    const response = await fetch("https://catbox.moe/user/api.php", {
-      method: "POST",
-      body: catboxForm,
-    })
+    // In local development, bypass Catbox completely since it hangs frequently.
+    if (process.env.NODE_ENV === "development") {
+      const { Buffer } = await import("buffer")
+      const { writeFile, mkdir } = await import("fs/promises")
+      const path = await import("path")
+      
+      const fileBytes = await receiptImage.arrayBuffer()
+      const buffer = Buffer.from(fileBytes)
+      const filename = `${Date.now()}-${receiptImage.name || 'receipt.png'}`
+      
+      const uploadDir = path.join(process.cwd(), "public", "uploads")
+      await mkdir(uploadDir, { recursive: true }).catch(() => {})
+      
+      const filepath = path.join(uploadDir, filename)
+      await writeFile(filepath, buffer)
+      
+      receiptImageUrl = `/uploads/${filename}`
+    } else {
+      // Production uses Catbox.moe
+      const catboxForm = new FormData()
+      catboxForm.append("reqtype", "fileupload")
+      
+      const fileBytes = await receiptImage.arrayBuffer()
+      const fileBlob = new Blob([fileBytes], { type: receiptImage.type || "image/png" })
+      catboxForm.append("fileToUpload", fileBlob, receiptImage.name || 'receipt.png')
 
-    if (!response.ok) {
-      throw new Error(`Failed to upload receipt: ${response.statusText}`)
+      const response = await fetch("https://catbox.moe/user/api.php", {
+        method: "POST",
+        body: catboxForm,
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to upload receipt: ${response.statusText}`)
+      }
+
+      receiptImageUrl = await response.text()
+
+      if (!receiptImageUrl.startsWith("http")) {
+        throw new Error("Invalid response from image host")
+      }
     }
 
-    const receiptImageUrl = await response.text()
-
-    if (!receiptImageUrl.startsWith("http")) {
-      throw new Error("Invalid response from image host")
-    }
-
-    // Save the Discord CDN URL to the database
+    // Save the Receipt URL to the database
     await prisma.order.update({
       where: { id },
       data: { senderPhoneNumber, receiptImageUrl } as any

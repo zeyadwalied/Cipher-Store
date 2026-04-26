@@ -15,27 +15,53 @@ export default function MediaPickerModal({ currentUrl, onSelect, onClose }: Prop
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleUpload = async (files: FileList | null) => {
+  const [uploadProgress, setUploadProgress] = useState(0)
+
+  const handleUpload = (files: FileList | null) => {
     if (!files || files.length === 0) return
     setUploadError(null)
     setIsUploading(true)
+    setUploadProgress(0)
 
     try {
       const file = files[0] // only support single upload for simplicity
       const fd = new FormData()
       fd.append("file", file)
-      const res = await fetch("/api/admin/media", { method: "POST", body: fd })
-      if (res.ok) {
-        const data = await res.json()
-        onSelect(data.url)
-        onClose()
-      } else {
-        const txt = await res.text()
-        setUploadError(txt)
+
+      const xhr = new XMLHttpRequest()
+      xhr.open("POST", "/api/admin/media")
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100)
+          setUploadProgress(percent)
+        }
       }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText)
+            onSelect(data.url)
+            onClose()
+          } catch (err) {
+            setUploadError("Invalid Server Response")
+            setIsUploading(false)
+          }
+        } else {
+          setUploadError(xhr.responseText || "Upload failed")
+          setIsUploading(false)
+        }
+      }
+
+      xhr.onerror = () => {
+        setUploadError("Network error during upload")
+        setIsUploading(false)
+      }
+
+      xhr.send(fd)
     } catch (err: any) {
       setUploadError(err.message || "An error occurred during upload")
-    } finally {
       setIsUploading(false)
     }
   }
@@ -84,9 +110,25 @@ export default function MediaPickerModal({ currentUrl, onSelect, onClose }: Prop
               onChange={e => handleUpload(e.target.files)}
             />
             {isUploading ? (
-              <div className="flex flex-col items-center justify-center gap-4 text-[#a855f7]">
-                <Loader2 className="h-10 w-10 animate-spin" />
-                <span className="text-sm font-mono font-bold">Uploading to Direct Host...</span>
+              <div className="flex flex-col items-center justify-center gap-4 text-[#a855f7] w-full max-w-[80%] mx-auto">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                <div className="w-full">
+                  <div className="flex justify-between items-center mb-2 px-1">
+                    <span className="text-xs font-mono font-bold text-gray-300">
+                      {uploadProgress < 100 ? "Uploading to Server..." : "Saving to External Host..."}
+                    </span>
+                    <span className="text-xs font-mono font-bold text-[#00f5ff]">{uploadProgress}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-[#141417] rounded-full overflow-hidden border border-[#27272a]">
+                    <div 
+                      className="h-full bg-gradient-to-r from-[#a855f7] to-[#00f5ff] transition-all duration-300" 
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+                {uploadProgress === 100 && (
+                  <p className="text-[10px] text-gray-400 font-mono mt-1 animate-pulse">This may take a moment while we process the image.</p>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3">

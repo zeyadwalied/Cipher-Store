@@ -3,13 +3,14 @@
 import { use, useEffect, useState, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { MessageSquare, Send, ArrowLeft, LifeBuoy, Package, User, Repeat, ShieldAlert, Loader2, ChevronDown, ReceiptText, Phone, ExternalLink } from "lucide-react"
+import { MessageSquare, Send, ArrowLeft, LifeBuoy, Package, User, Repeat, ShieldAlert, Loader2, ChevronDown, ReceiptText, Phone, ExternalLink, Check, CheckCheck } from "lucide-react"
 import Link from "next/link"
 import StaffSelect from "@/components/admin/staff-select"
 import { CyberBackgroundBranches } from "@/components/CyberBackgroundBranches"
 
 function parseReceiptMessage(content: string) {
-  const match = content.match(/^🧾\s+\*\*Buyer uploaded Payment Receipt\*\*\s*\nPhone:\s*([\s\S]+?)\s*\n\[View Receipt\]\((https?:\/\/[\s\S]+)\)$/)
+  // Allow paths starting with http or / and remove potential trailing / added by markdown parsers
+  const match = content.match(/^🧾\s+\*\*Buyer uploaded Payment Receipt\*\*\s*\nPhone:\s*([\s\S]+?)\s*\n\[View Receipt\]\(((?:https?:\/\/[^\s\)]+)|\/[^\s\)]+?)\/*\)$/)
 
   if (!match) {
     return null
@@ -49,14 +50,27 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
       .catch(console.error)
   }, [canManageChat])
 
+  const lastUpdatedAtRef = useRef<string | null>(null)
+
   useEffect(() => {
     fetchChat()
 
-    // Simple polling for new messages every 3 seconds
-    const interval = setInterval(() => {
-      fetchChat(true)
-    }, 3000)
+    // Egress Optimization: Lightweight polling every 5 seconds
+    const pollChatStatus = async () => {
+      try {
+        const res = await fetch(`/api/chats/${id}/messages?check=true`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.updatedAt && data.updatedAt !== lastUpdatedAtRef.current) {
+            fetchChat(true)
+          }
+        }
+      } catch (e) {
+        // Silent fail on polling errors
+      }
+    }
 
+    const interval = setInterval(pollChatStatus, 5000)
     return () => clearInterval(interval)
   }, [id])
 
@@ -119,7 +133,9 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
     try {
       const res = await fetch(`/api/chats/${id}/messages`)
       if (res.ok) {
-        setChat(await res.json())
+        const data = await res.json()
+        setChat(data)
+        lastUpdatedAtRef.current = data.updatedAt
       } else if (!silent) {
         window.location.href = "/chat"
       }
@@ -130,11 +146,24 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim() || isSending) return
+    if (!newMessage.trim() || isSending || !session?.user?.id) return
 
     setIsSending(true)
     const content = newMessage
-    setNewMessage("") // Optmistic clear
+    setNewMessage("") 
+    
+    // Optmistic UI addition
+    const tempId = `temp-${Date.now()}`
+    setChat((prev: any) => ({
+      ...prev,
+      messages: [...(prev?.messages || []), {
+        id: tempId,
+        content,
+        senderId: session.user.id,
+        createdAt: new Date().toISOString(),
+        isAi: false
+      }]
+    }))
 
     try {
       const res = await fetch(`/api/chats/${id}/messages`, {
@@ -146,10 +175,12 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
         fetchChat()
       } else {
         setNewMessage(content) // Restore on fail
+        setChat((prev: any) => ({ ...prev, messages: prev.messages.filter((m: any) => m.id !== tempId) }))
       }
     } catch (e) {
       console.error("Failed to send", e)
       setNewMessage(content)
+      setChat((prev: any) => ({ ...prev, messages: prev.messages.filter((m: any) => m.id !== tempId) }))
     } finally {
       setIsSending(false)
     }
@@ -291,7 +322,7 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
                 : 'تم الإلغاء عبر الموقع'}
             </div>
           )}
-          {chat.messages?.map((msg: any) => {
+          {chat.messages?.map((msg: any, index: number) => {
             let isMe = msg.senderId === session?.user?.id
             // Force customer messages to left, staff to right for support chats
             if (isSupport) {
@@ -322,16 +353,22 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
             const senderName = isStaffMsg ? "Cipher Store" : (msg.sender?.name || chat.buyer?.name || "Customer")
             const receipt = parseReceiptMessage(msg.content)
 
+            // Zero-DB Read Receipt Heuristic Strategy:
+            // 1 tick = Delivered to server (not seen). 2 ticks = Appears seen by other party. Spinner = Sending.
+            // If there's any message AFTER this one sent by the counterparty, it is DEFINITELY seen -> 2 ticks.
+            const isTempSending = msg.id && msg.id.startsWith("temp-")
+            const hasBeenSeen = chat.messages?.slice(index + 1).some((m: any) => m.senderId !== msg.senderId && !m.isAi) || false
+
             return (
               <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                 <div className={`flex gap-3 max-w-[80%] ${isMe ? 'flex-row' : 'flex-row-reverse'}`} dir="rtl">
                   <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 overflow-hidden ${isMe ? 'bg-yellow-500/20 text-yellow-500' : 'bg-gray-700/50 text-gray-400'}`}>
                     {isMe ? <LifeBuoy className="h-4 w-4 text-yellow-500" /> : (msg.sender?.image ? <img src={msg.sender.image} alt="User" className="h-full w-full object-cover" /> : <User className="h-4 w-4" />)}
                   </div>
-                  <div className={`p-4 shadow-md text-sm whitespace-pre-wrap leading-relaxed flex flex-col ${isMe
+                  <div className={`p-4 shadow-md text-sm whitespace-pre-wrap leading-relaxed flex flex-col relative ${isMe
                     ? 'bg-[#a855f7] text-white rounded-2xl rounded-tr-sm'
                     : 'bg-[#141417] border border-[#27272a] text-gray-200 rounded-2xl rounded-tl-sm'
-                    }`}>
+                    } ${isTempSending ? 'opacity-70' : ''}`}>
                     <span className={`text-[10px] uppercase tracking-wider mb-1 font-bold ${isMe ? 'text-purple-200 text-right' : 'text-gray-400 text-right'}`} dir="rtl">
                       {senderName}
                     </span>
@@ -339,7 +376,7 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
                       <div className={`mt-1 rounded-2xl border p-3 ${isMe ? 'border-white/15 bg-white/10' : 'border-[#27272a] bg-[#09090b]'}`}>
                         <div className={`mb-3 flex items-center gap-2 text-xs font-bold ${isMe ? 'text-purple-100' : 'text-emerald-300'}`}>
                           <ReceiptText className="h-4 w-4" />
-                          Payment Receipt
+                          إيصال دفع مستلم
                         </div>
                         <div className={`mb-3 flex items-center gap-2 text-xs ${isMe ? 'text-purple-100/90' : 'text-gray-300'}`}>
                           <Phone className="h-3.5 w-3.5" />
@@ -349,7 +386,7 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
                           href={receipt.imageUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="group block w-fit overflow-hidden rounded-2xl border border-white/10"
+                          className="group block w-fit overflow-hidden rounded-xl border border-white/10"
                         >
                           <img
                             src={receipt.imageUrl}
@@ -364,15 +401,27 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
                           className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${isMe ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15'}`}
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
-                          View Full Receipt
+                          عرض الصورة كاملة
                         </a>
                       </div>
                     ) : (
                       <span dir="rtl">{msg.content}</span>
                     )}
-                    <div className={`text-[10px] mt-2 ${isMe ? 'text-purple-200 text-left' : 'text-gray-500 text-left'}`}>
+                    
+                    <div className={`flex items-center gap-1.5 mt-2 text-[10px] ${isMe ? 'text-purple-200 self-end' : 'text-gray-500 self-start'} flex-row-reverse`}>
                       {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      
+                      <span className="flex items-center justify-center">
+                        {isTempSending ? (
+                          <Loader2 className="h-3 w-3 animate-spin text-purple-200" />
+                        ) : hasBeenSeen ? (
+                          <CheckCheck className={`h-4 w-4 ${isMe ? 'text-green-300' : 'text-green-500'}`} />
+                        ) : (
+                          <Check className={`h-3.5 w-3.5 ${isMe ? 'text-purple-200/70' : 'text-gray-500'}`} />
+                        )}
+                      </span>
                     </div>
+
                   </div>
                 </div>
               </div>
@@ -381,7 +430,7 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
           <div ref={messagesEndRef} />
         </div>
 
-        <form onSubmit={sendMessage} className="bg-[#141417] border border-[#27272a] rounded-b-xl p-4 flex gap-3 flex-row-reverse text-right">
+        <form onSubmit={sendMessage} className="bg-[#141417] border border-[#27272a] rounded-b-xl p-4 flex gap-3 flex-row-reverse text-right relative z-20">
           <input
             type="text"
             placeholder={chat.status?.startsWith('CLOSED_') ? "هذه التذكرة مغلقة..." : "اكتب رسالتك..."}
@@ -396,11 +445,7 @@ export default function ChatWindow({ params }: { params: Promise<{ id: string }>
             disabled={isSending || !newMessage.trim() || chat.status?.startsWith('CLOSED_') || chat.order?.status === 'COMPLETED' || chat.order?.status === 'CANCELLED'}
             className="bg-[#a855f7] hover:bg-[#9333ea] text-white rounded-xl px-6 font-bold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(168,85,247,0.3)]"
           >
-            {isSending ? (
-              <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Send className="h-5 w-5 rotate-180" />
-            )}
+             إرسال <Send className="h-5 w-5 rotate-180" />
           </button>
         </form>
       </div>

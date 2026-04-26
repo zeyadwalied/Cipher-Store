@@ -60,8 +60,8 @@ export async function POST(req: Request) {
       } as any
     })
 
-    revalidateTag('products', 'max')
-    revalidateTag('categories', 'max') // Home page categorisation might change
+    revalidateTag('products')
+    revalidateTag('categories')
 
     // Discord log removed
 

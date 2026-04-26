@@ -4,17 +4,25 @@ import { useCartStore } from "@/lib/store"
 import Link from "next/link"
 import { Gamepad2, ArrowRight, Trash2, X, ShoppingCart } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 export function CartDrawer() {
   const { items, isOpen, setIsOpen, removeItem, updateQuantity, getCartTotal } = useCartStore()
   const router = useRouter()
+  const pathname = usePathname()
   const [isMounted, setIsMounted] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
 
   // Prevent hydration errors
   useEffect(() => {
     setIsMounted(true)
   }, [])
+
+  // Close drawer on route change and reset navigating state
+  useEffect(() => {
+    setIsOpen(false)
+    setIsNavigating(false)
+  }, [pathname, setIsOpen])
 
   if (!isMounted) return null
 
@@ -22,7 +30,7 @@ export function CartDrawer() {
   const handleOverlayClick = () => setIsOpen(false)
 
   const handleCheckoutClick = () => {
-    setIsOpen(false)
+    setIsNavigating(true)
     router.push("/cart")
   }
 
@@ -147,10 +155,17 @@ export function CartDrawer() {
             
             <button
               onClick={handleCheckoutClick}
-              className="w-full bg-white hover:bg-gray-100 text-black font-extrabold py-3.5 rounded-xl transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_25px_rgba(255,255,255,0.3)] flex items-center justify-center gap-2 group"
+              disabled={isNavigating}
+              className="w-full bg-white hover:bg-gray-100 text-black font-extrabold py-3.5 rounded-xl transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_25px_rgba(255,255,255,0.3)] flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              استكمال الدفع
-              <ArrowRight className="h-5 w-5 transform rotate-180 group-hover:-translate-x-1 transition-transform" />
+              {isNavigating ? (
+                <div className="h-5 w-5 rounded-full border-2 border-black/30 border-t-black animate-spin" />
+              ) : (
+                <>
+                  استكمال الدفع
+                  <ArrowRight className="h-5 w-5 transform rotate-180 group-hover:-translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
           </div>
         )}
