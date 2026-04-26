@@ -192,6 +192,10 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
                     onClick={(e) => {
                       if (product.stockQuantity === 0) return;
                       e.preventDefault();
+                      e.stopPropagation();
+                      if (e.nativeEvent) {
+                        e.nativeEvent.stopImmediatePropagation();
+                      }
                       setLoadingProducts(prev => ({ ...prev, [product.id]: true }));
                       
                       setTimeout(() => {

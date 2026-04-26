@@ -88,15 +88,20 @@ export const getCachedCategoriesLight = unstable_cache(
 )
 
 /**
- * Fetch category images separately (not cached).
- * Category visuals may be stored as inline data URLs, and we want to preserve
- * them for the category hero/background sections.
+ * Fetch category images separately (cached).
  */
-export async function getCategoryImages(): Promise<Map<string, { imageUrl: string | null, backgroundImageUrl: string | null }>> {
-    const cats = await prisma.category.findMany({
-        select: { id: true, imageUrl: true, backgroundImageUrl: true }
-    })
+export const getCachedCategoryImagesRaw = unstable_cache(
+    async () => {
+        return await prisma.category.findMany({
+            select: { id: true, imageUrl: true, backgroundImageUrl: true }
+        })
+    },
+    ['categories-images'],
+    { tags: ['categories'] }
+)
 
+export async function getCategoryImages(): Promise<Map<string, { imageUrl: string | null, backgroundImageUrl: string | null }>> {
+    const cats = await getCachedCategoryImagesRaw();
     const map = new Map<string, { imageUrl: string | null, backgroundImageUrl: string | null }>()
     for (const c of cats) {
         map.set(c.id, { imageUrl: c.imageUrl, backgroundImageUrl: c.backgroundImageUrl })

@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { sanitizeImageUrlForNav } from "@/lib/image-url"
+import { unstable_cache } from "next/cache"
 
-export const dynamic = "force-dynamic"
-
-export async function GET() {
-  try {
-    const categories = await prisma.category.findMany({
+const getCachedNavCategories = unstable_cache(
+  async () => {
+    return await prisma.category.findMany({
       select: {
         id: true,
         name: true,
@@ -20,6 +19,14 @@ export async function GET() {
         { createdAt: 'desc' }
       ]
     })
+  },
+  ['navbar-categories'],
+  { tags: ['categories'] }
+)
+
+export async function GET() {
+  try {
+    const categories = await getCachedNavCategories();
 
     return NextResponse.json(
       categories.map((cat) => ({
