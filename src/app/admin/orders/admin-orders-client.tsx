@@ -1,7 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Package, Search, CheckCircle, Smartphone, Image as ImageIcon, Trash2, X, MessageSquare, Send, Mail, AlertTriangle, Loader2 } from "lucide-react"
+import { Package, Search, CheckCircle, Smartphone, Image as ImageIcon, Trash2, X, MessageSquare, Send, Mail, AlertTriangle, Loader2, ReceiptText, Phone, ExternalLink, Check, CheckCheck } from "lucide-react"
+
+function parseReceiptMessage(content: string) {
+  const match = content.match(/^🧾\s+\*\*Buyer uploaded Payment Receipt\*\*\s*\nPhone:\s*([\s\S]+?)\s*\n\[View Receipt\]\(((?:https?:\/\/[^\s\)]+)|\/[^\s\)]+?)\/*\)$/)
+  if (!match) return null
+  return { phone: match[1].trim(), imageUrl: match[2].trim() }
+}
 
 export default function AdminOrdersClient({ initialOrders, currentUserRole }: { initialOrders: any[], currentUserRole: string }) {
   const [orders, setOrders] = useState(initialOrders)
@@ -68,8 +74,6 @@ export default function AdminOrdersClient({ initialOrders, currentUserRole }: { 
       console.error(e)
     }
   }
-
-
 
   return (
     <div className="max-w-6xl mx-auto pb-24">
@@ -251,21 +255,38 @@ function OrderChatModal({ order, onClose, currentUserRole }: { order: any, onClo
     e.preventDefault()
     if (!newMessage.trim() || isSending) return
 
+    const tempId = `temp-${Date.now()}`
+    const content = newMessage
+    
+    // Optimistic UI update
+    setMessages(prev => [...prev, {
+      id: tempId,
+      content: content,
+      senderId: "ADMIN", // Generic placeholder since we don't have actual senderId directly here, but it's clearly an admin
+      createdAt: new Date().toISOString(),
+      isAi: false
+    }])
+    setNewMessage("")
+
     try {
       setIsSending(true)
       const res = await fetch(`/api/admin/orders/${order.id}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newMessage })
+        body: JSON.stringify({ content })
       })
 
       if (res.ok) {
         const msg = await res.json()
-        setMessages([...messages, msg])
-        setNewMessage("")
+        setMessages(prev => prev.map(m => m.id === tempId ? msg : m))
+      } else {
+        setMessages(prev => prev.filter(m => m.id !== tempId))
+        setNewMessage(content)
       }
     } catch (e) {
       console.error(e)
+      setMessages(prev => prev.filter(m => m.id !== tempId))
+      setNewMessage(content)
     } finally {
       setIsSending(false)
     }
@@ -305,7 +326,7 @@ function OrderChatModal({ order, onClose, currentUserRole }: { order: any, onClo
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[60] flex justify-center items-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-[#0a0a0c] border border-[#27272a] rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden shadow-2xl">
 
         {/* Left Side: Order Details & Receipt */}
@@ -392,19 +413,49 @@ function OrderChatModal({ order, onClose, currentUserRole }: { order: any, onClo
               </div>
             ) : (
               messages.map((msg, i) => {
+                // Determine if this msg was sent by Admin. (We added "ADMIN" for optimistic messages too).
                 const isAdmin = msg.senderId !== order.userId && !msg.isAi;
                 const canDelete = currentUserRole === "OWNER" || currentUserRole === "MANAGER";
+                const isTempSending = msg.id && msg.id.startsWith("temp-");
+                const receipt = parseReceiptMessage(msg.content);
+
+                const hasBeenSeen = messages.slice(i + 1).some((m: any) => m.senderId !== msg.senderId && !m.isAi) || false;
 
                 return (
                   <div key={i} className={`flex flex-col group ${isAdmin ? "items-end" : "items-start"}`}>
                     <div className="text-[10px] text-gray-500 mb-1 px-1 flex items-center gap-2">
                       {isAdmin ? "You (Admin)" : (order.user?.name || "Customer")}
                     </div>
-                    <div className={`px-4 py-2.5 rounded-2xl max-w-[85%] text-sm relative ${isAdmin
+                    <div className={`px-4 py-3 rounded-2xl max-w-[85%] text-sm relative ${isAdmin
                       ? "bg-[#a855f7] text-white rounded-tr-sm"
                       : "bg-[#27272a] text-gray-100 rounded-tl-sm"
-                      }`}>
-                      {msg.content}
+                      } ${isTempSending ? "opacity-70" : ""}`}>
+                      
+                      {receipt ? (
+                        <div className={`rounded-xl border p-3 ${isAdmin ? 'border-white/15 bg-white/10' : 'border-[#27272a] bg-[#09090b]'}`}>
+                          <div className={`mb-2 flex items-center gap-2 text-xs font-bold ${isAdmin ? 'text-purple-100' : 'text-emerald-300'}`}>
+                            <ReceiptText className="h-4 w-4" />
+                            إيصال دفع مستلم
+                          </div>
+                          <div className={`mb-2 flex items-center gap-2 text-xs ${isAdmin ? 'text-purple-100/90' : 'text-gray-300'}`}>
+                            <Phone className="h-3.5 w-3.5" />
+                            <span dir="ltr">{receipt.phone}</span>
+                          </div>
+                          <button
+                            onClick={(e) => { e.preventDefault(); setFullScreenImage(receipt.imageUrl); }}
+                            className="group block w-fit overflow-hidden rounded-lg border border-white/10 cursor-zoom-in"
+                          >
+                            <img
+                              src={receipt.imageUrl}
+                              alt="Payment receipt"
+                              className="max-h-[140px] w-auto max-w-[180px] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                            />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="whitespace-pre-wrap">{msg.content}</span>
+                      )}
+
                       {canDelete && (
                         <button
                           onClick={() => deleteMessage(msg.id)}
@@ -414,9 +465,20 @@ function OrderChatModal({ order, onClose, currentUserRole }: { order: any, onClo
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
-                    </div>
-                    <div className="text-[9px] text-gray-600 mt-1 px-1">
-                      {new Date(msg.createdAt).toLocaleTimeString()}
+
+                      <div className={`flex items-center gap-1.5 mt-2 text-[9px] ${isAdmin ? 'text-purple-200 justify-end' : 'text-gray-400 justify-start'}`}>
+                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        
+                        <span className="flex items-center justify-center">
+                          {isTempSending ? (
+                            <Loader2 className="h-3 w-3 animate-spin text-purple-200" />
+                          ) : hasBeenSeen ? (
+                            <CheckCheck className={`h-4 w-4 ${isAdmin ? 'text-green-300' : 'text-green-500'}`} />
+                          ) : (
+                            <Check className={`h-3.5 w-3.5 ${isAdmin ? 'text-purple-200/70' : 'text-gray-500'}`} />
+                          )}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )
@@ -451,7 +513,7 @@ function OrderChatModal({ order, onClose, currentUserRole }: { order: any, onClo
       {/* Full Screen Image Modal */}
       {fullScreenImage && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 animate-in fade-in cursor-zoom-out"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 p-4 animate-in fade-in cursor-zoom-out"
           onClick={() => setFullScreenImage(null)}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -31,7 +31,29 @@ export async function POST(req: Request) {
       return new NextResponse("File too large (max 20MB)", { status: 400 })
     }
 
-    // Upload to Catbox.moe for permanent direct image hosting
+    // In local development, bypass Catbox completely since it hangs frequently.
+    if (process.env.NODE_ENV === "development") {
+      const { Buffer } = await import("buffer")
+      const { writeFile, mkdir } = await import("fs/promises")
+      const path = await import("path")
+      
+      const fileBytes = await file.arrayBuffer()
+      const buffer = Buffer.from(fileBytes)
+      const filename = `${Date.now()}-${file.name || 'image.png'}`
+      
+      const uploadDir = path.join(process.cwd(), "public", "uploads")
+      await mkdir(uploadDir, { recursive: true }).catch(() => {})
+      
+      const filepath = path.join(uploadDir, filename)
+      await writeFile(filepath, buffer)
+      
+      return NextResponse.json(
+        { url: `/uploads/${filename}`, name: file.name },
+        { status: 201 }
+      )
+    }
+
+    // Production uses Catbox.moe for permanent direct image hosting
     const catboxForm = new FormData()
     catboxForm.append("reqtype", "fileupload")
     

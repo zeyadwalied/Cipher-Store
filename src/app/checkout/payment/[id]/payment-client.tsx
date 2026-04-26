@@ -13,6 +13,7 @@ export default function PaymentClient({ order }: { order: any }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loadingInitial, setLoadingInitial] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   useEffect(() => {
     const timer = setTimeout(() => setLoadingInitial(false), 1200)
@@ -32,29 +33,43 @@ export default function PaymentClient({ order }: { order: any }) {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!phone || !file) return alert("الرجاء إدخال رقم الهاتف ورفع صورة التحويل")
     setIsSubmitting(true)
+    setUploadProgress(0)
 
     try {
       const formData = new FormData()
       formData.append("senderPhoneNumber", phone)
       formData.append("receiptImage", file)
 
-      const res = await fetch(`/api/checkout/${order.id}/payment`, {
-        method: "POST",
-        body: formData
-      })
+      const xhr = new XMLHttpRequest()
+      xhr.open("POST", `/api/checkout/${order.id}/payment`)
 
-      if (res.ok) {
-        clearCart()
-        router.push(`/order-confirmation/${order.id}`)
-      } else {
-        const errText = await res.text()
-        alert(`فشل رفع البيانات: ${res.status} - ${errText}`)
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100)
+          setUploadProgress(percent)
+        }
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          clearCart()
+          router.push(`/order-confirmation/${order.id}`)
+        } else {
+          alert(`فشل رفع البيانات: ${xhr.status} - ${xhr.responseText}`)
+          setIsSubmitting(false)
+        }
+      }
+
+      xhr.onerror = () => {
+        alert("حدث خطأ أثناء الاتصال بالخادم")
         setIsSubmitting(false)
       }
+
+      xhr.send(formData)
     } catch (err: any) {
       console.error(err)
       alert(`حدث خطأ أثناء الاتصال بالخادم: ${err.message}`)
@@ -211,19 +226,28 @@ export default function PaymentClient({ order }: { order: any }) {
           <button
             type="submit"
             disabled={isSubmitting || !phone || !file}
-            className="w-full bg-gradient-to-r from-[#00f5ff] to-[#a855f7] hover:brightness-110 text-white font-bold py-5 rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-xl shadow-[0_10px_30px_rgba(168,85,247,0.3)] mt-8"
+            className="w-full bg-gradient-to-r from-[#00f5ff] to-[#a855f7] hover:brightness-110 text-white font-bold py-5 rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-xl shadow-[0_10px_30px_rgba(168,85,247,0.3)] mt-8 relative overflow-hidden"
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-6 w-6 animate-spin" />
-                جاري المعالجة...
-              </>
-            ) : (
-              <>
-                تأكيد الدفع وإرسال الطلب
-                <ArrowRight className="w-6 h-6 rotate-180" />
-              </>
+            {isSubmitting && uploadProgress > 0 && uploadProgress < 100 && (
+              <div 
+                className="absolute left-0 top-0 bottom-0 bg-white/20 transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
             )}
+            
+            <div className="relative z-10 flex items-center gap-3">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  {uploadProgress < 100 ? `جاري الرفع... ${uploadProgress}%` : 'جاري التحقق والمعالجة...'}
+                </>
+              ) : (
+                <>
+                  تأكيد الدفع وإرسال الطلب
+                  <ArrowRight className="w-6 h-6 rotate-180" />
+                </>
+              )}
+            </div>
           </button>
         </form>
       </div>

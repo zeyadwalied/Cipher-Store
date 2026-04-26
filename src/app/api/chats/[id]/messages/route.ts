@@ -40,6 +40,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
     const { id } = await params
+    
+    // Egress Optimization: Lightweight status check
+    const url = new URL(req.url)
+    if (url.searchParams.get("check") === "true") {
+      const chatMeta = await prisma.chat.findUnique({
+        where: { id },
+        select: { updatedAt: true }
+      })
+      if (!chatMeta) return new NextResponse("Not Found", { status: 404 })
+      return NextResponse.json({ updatedAt: chatMeta.updatedAt })
+    }
 
     const chat = await prisma.chat.findUnique({
       where: { id },
