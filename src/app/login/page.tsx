@@ -21,6 +21,12 @@ export default function LoginPage() {
     } else if (urlError) {
       setError("خطأ في تسجيل الدخول - " + urlError)
     }
+
+    const isDemo = searchParams.get("demo")
+    if (isDemo === "true") {
+      setEmail("guest@cipherstore.com")
+      setPassword("GuestDemo")
+    }
   }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
