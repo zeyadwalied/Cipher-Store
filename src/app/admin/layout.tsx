@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { ShieldAlert, LayoutDashboard, PackageSearch, Users, ShoppingCart, LogOut, MessageSquare, Database, Tag } from "lucide-react"
+import { ShieldAlert, LayoutDashboard, PackageSearch, Users, ShoppingCart, LogOut, MessageSquare, Database, Tag, Info } from "lucide-react"
 import prisma from "@/lib/prisma"
 import { isProtectedUser } from "@/lib/protected-user"
 
@@ -115,8 +115,19 @@ export default async function AdminLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="min-w-0 flex-1 bg-[#09090b] p-8">
-        {children}
+      <main className="min-w-0 flex-1 bg-[#09090b] flex flex-col">
+        {session.user.email === "guest@cipherstore.com" && (
+          <div className="bg-[#a855f7]/10 border-b border-[#a855f7]/30 px-8 py-3 flex items-center justify-center gap-3 shrink-0 relative z-10 shadow-[0_4px_20px_-10px_rgba(168,85,247,0.4)]">
+            <Info className="h-5 w-5 text-[#a855f7]" />
+            <p className="text-sm text-gray-200">
+              <strong className="text-[#a855f7] mr-1">Guest Mode:</strong> 
+              You are exploring the system as a demo user. Some sensitive actions might be simulated or restricted.
+            </p>
+          </div>
+        )}
+        <div className="p-8 flex-1 overflow-auto">
+          {children}
+        </div>
       </main>
     </div>
   )
