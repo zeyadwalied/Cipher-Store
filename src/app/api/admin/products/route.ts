@@ -60,8 +60,8 @@ export async function POST(req: Request) {
       } as any
     })
 
-    revalidateTag('products')
-    revalidateTag('categories')
+    revalidateTag('products', 'max' as any)
+    revalidateTag('categories', 'max' as any)
 
     // Discord log removed
 
