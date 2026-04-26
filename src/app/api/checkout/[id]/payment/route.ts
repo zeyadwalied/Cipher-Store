@@ -31,7 +31,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Upload receipt to Catbox.moe for direct image hosting
     const catboxForm = new FormData()
     catboxForm.append("reqtype", "fileupload")
-    catboxForm.append("fileToUpload", receiptImage)
+    
+    // Explicitly create a Blob and pass the filename to prevent 'Precondition Failed' errors
+    const fileBytes = await receiptImage.arrayBuffer()
+    const fileBlob = new Blob([fileBytes], { type: receiptImage.type || "image/png" })
+    catboxForm.append("fileToUpload", fileBlob, receiptImage.name || 'receipt.png')
 
     const response = await fetch("https://catbox.moe/user/api.php", {
       method: "POST",

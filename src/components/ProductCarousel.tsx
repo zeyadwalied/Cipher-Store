@@ -1,13 +1,16 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import Link from "next/link"
 import { ChevronRight, ChevronLeft, ShoppingCart } from "lucide-react"
 import { calculateDiscount, Discount } from "@/lib/discountEngine"
 import { CATEGORY_CAROUSEL_LIMIT } from "@/lib/category-preview"
+import { useCartStore } from "@/lib/store"
 
 export function ProductCarousel({ products, globalDiscounts = [] }: { products: any[], globalDiscounts?: Discount[] }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const { addItem, setIsOpen } = useCartStore()
+  const [loadingProducts, setLoadingProducts] = useState<Record<string, boolean>>({})
 
   const animateSlide = (direction: 'left' | 'right') => {
     if (!scrollContainerRef.current) return
@@ -185,13 +188,34 @@ export function ProductCarousel({ products, globalDiscounts = [] }: { products: 
                   </div>
 
                   {/* Modern Purchase Button */}
-                  <div className={`relative overflow-hidden rounded-lg border transition-all duration-300 ${product.stockQuantity === 0
-                    ? "bg-red-900/10 border-red-500/30 group-hover/card:bg-red-500/20 group-hover/card:border-red-500/50 group-hover/card:shadow-[0_0_15px_rgba(239,68,68,0.4)]"
-                    : "bg-[#a855f7]/10 border-[#a855f7]/30 group-hover/card:bg-[#a855f7] group-hover/card:border-[#a855f7] group-hover/card:shadow-[0_0_15px_rgba(168,85,247,0.6)]"
+                  <div 
+                    onClick={(e) => {
+                      if (product.stockQuantity === 0) return;
+                      e.preventDefault();
+                      setLoadingProducts(prev => ({ ...prev, [product.id]: true }));
+                      
+                      setTimeout(() => {
+                        const { finalPrice } = calculateDiscount(product, globalDiscounts);
+                        addItem({
+                          id: product.id,
+                          name: product.name,
+                          price: finalPrice,
+                          quantity: 1,
+                          image: product.image
+                        });
+                        setIsOpen(true);
+                        setLoadingProducts(prev => ({ ...prev, [product.id]: false }));
+                      }, 500);
+                    }}
+                    className={`relative overflow-hidden rounded-lg border transition-all duration-300 ${product.stockQuantity === 0
+                    ? "bg-red-900/10 border-red-500/30 group-hover/card:bg-red-500/20 group-hover/card:border-red-500/50 group-hover/card:shadow-[0_0_15px_rgba(239,68,68,0.4)] cursor-pointer"
+                    : "bg-[#a855f7]/10 border-[#a855f7]/30 group-hover/card:bg-[#a855f7] group-hover/card:border-[#a855f7] group-hover/card:shadow-[0_0_15px_rgba(168,85,247,0.6)] cursor-pointer"
                     }`}>
-                    <div className={`px-2 py-1.5 sm:px-4 sm:py-2 text-[9px] sm:text-[11px] font-bold transition-colors ${product.stockQuantity === 0 ? "text-red-400 group-hover/card:text-red-300" : "text-[#c084fc] group-hover/card:text-white"
+                    <div className={`px-2 py-1.5 sm:px-4 sm:py-2 text-[9px] sm:text-[11px] font-bold transition-colors ${loadingProducts[product.id] ? "text-white" : product.stockQuantity === 0 ? "text-red-400 group-hover/card:text-red-300" : "text-[#c084fc] group-hover/card:text-white"
                       }`}>
-                      {product.stockQuantity === 0 ? "تفاصيل" : <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />}
+                      {loadingProducts[product.id] ? (
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
+                      ) : product.stockQuantity === 0 ? "تفاصيل" : <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />}
                     </div>
                   </div>
                 </div>

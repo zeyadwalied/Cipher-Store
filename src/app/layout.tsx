@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
 
 import { Providers } from "@/components/providers";
@@ -7,6 +7,7 @@ import { Footer } from "@/components/footer";
 import { AiChatWidgetLoader } from "@/components/ai-chat-widget-loader";
 import SessionSync from "@/components/session-sync";
 import { HydrationDetector } from "@/components/HydrationDetector";
+import { CartDrawer } from "@/components/CartDrawer";
 import NextTopLoader from 'nextjs-toploader';
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
@@ -226,6 +227,7 @@ export default async function RootLayout({
           <SpeedInsights />
           <HydrationDetector />
           <SessionSync />
+          <CartDrawer />
           <Navbar initialCategories={initialNavbarCategories} />
           <main className="flex-1 flex flex-col relative w-full">
             {isLockedOut ? <MaintenanceScreen /> : children}
