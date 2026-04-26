@@ -28,13 +28,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return new NextResponse("Missing fields (phone or image)", { status: 400 })
     }
 
-    const originalFileName = receiptImage.name || 'receipt.png'
-    const fileName = `receipt_${id}_${Date.now()}_${originalFileName}`
+    // Upload receipt to Catbox.moe for direct image hosting
+    const catboxForm = new FormData()
+    catboxForm.append("reqtype", "fileupload")
+    catboxForm.append("fileToUpload", receiptImage)
 
-    const fileBytes = await receiptImage.arrayBuffer()
-    const fileBlob = new Blob([fileBytes], { type: receiptImage.type || "image/png" })
+    const response = await fetch("https://catbox.moe/user/api.php", {
+      method: "POST",
+      body: catboxForm,
+    })
 
-    const receiptImageUrl = "https://placehold.co/600x400/png?text=Receipt+Uploaded+(Discord+Disabled)"
+    if (!response.ok) {
+      throw new Error(`Failed to upload receipt: ${response.statusText}`)
+    }
+
+    const receiptImageUrl = await response.text()
+
+    if (!receiptImageUrl.startsWith("http")) {
+      throw new Error("Invalid response from image host")
+    }
 
     // Save the Discord CDN URL to the database
     await prisma.order.update({
