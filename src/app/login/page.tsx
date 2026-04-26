@@ -4,13 +4,14 @@ import { useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Gamepad2, ArrowRight, Eye, EyeOff } from "lucide-react"
+import { Gamepad2, ArrowRight, Eye, EyeOff, Info } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
+  const [isDemoMode, setIsDemoMode] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -26,6 +27,7 @@ export default function LoginPage() {
     if (isDemo === "true") {
       setEmail("guest@cipherstore.com")
       setPassword("GuestDemo")
+      setIsDemoMode(true)
     }
   }, [searchParams])
 
@@ -84,6 +86,16 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-white">مرحباً بعودتك</h1>
           <p className="text-sm text-gray-400 mt-1">سجل الدخول لحسابك في Cipher Store</p>
         </div>
+
+        {isDemoMode && (
+          <div className="mb-6 p-4 rounded-xl bg-[#a855f7]/10 border border-[#a855f7]/30 text-center flex flex-col items-center gap-2 animate-in fade-in zoom-in duration-300">
+            <Info className="h-6 w-6 text-[#a855f7]" />
+            <div>
+              <p className="font-bold text-[#a855f7]">You are in Guest Mode</p>
+              <p className="text-sm text-gray-300">You can test the system capabilities directly with this demo account.</p>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium text-center">
