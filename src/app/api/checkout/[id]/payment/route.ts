@@ -48,28 +48,30 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       
       receiptImageUrl = `/uploads/${filename}`
     } else {
-      // Production uses Catbox.moe
-      const catboxForm = new FormData()
-      catboxForm.append("reqtype", "fileupload")
-      
+      // Production uses ImgBB (Catbox blocks Vercel IPs)
       const fileBytes = await receiptImage.arrayBuffer()
-      const fileBlob = new Blob([fileBytes], { type: receiptImage.type || "image/png" })
-      catboxForm.append("fileToUpload", fileBlob, receiptImage.name || 'receipt.png')
+      const base64Data = Buffer.from(fileBytes).toString('base64')
+      
+      const imgbbForm = new FormData()
+      imgbbForm.append("key", process.env.IMGBB_API_KEY || "e1b9b1e2206bcfa7e8d7ea761bd0fb45")
+      imgbbForm.append("image", base64Data)
 
-      const response = await fetch("https://catbox.moe/user/api.php", {
+      const response = await fetch("https://api.imgbb.com/1/upload", {
         method: "POST",
-        body: catboxForm,
+        body: imgbbForm,
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to upload receipt: ${response.statusText}`)
+        throw new Error(`Failed to upload receipt to ImgBB: ${response.statusText}`)
       }
 
-      receiptImageUrl = await response.text()
-
-      if (!receiptImageUrl.startsWith("http")) {
+      const result = await response.json()
+      
+      if (!result.success || !result.data || !result.data.url) {
         throw new Error("Invalid response from image host")
       }
+      
+      receiptImageUrl = result.data.url
     }
 
     // Save the Receipt URL to the database
