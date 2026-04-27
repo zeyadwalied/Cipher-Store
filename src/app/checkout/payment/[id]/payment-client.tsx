@@ -38,11 +38,10 @@ export default function PaymentClient({ order }: { order: any }) {
 
     try {
       const formData = new FormData()
-      formData.append("key", process.env.NEXT_PUBLIC_IMGBB_API_KEY || "e1b9b1e2206bcfa7e8d7ea761bd0fb45")
       formData.append("image", selectedFile)
 
       const xhr = new XMLHttpRequest()
-      xhr.open("POST", "https://api.imgbb.com/1/upload")
+      xhr.open("POST", "/api/upload")
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -60,7 +59,7 @@ export default function PaymentClient({ order }: { order: any }) {
               reject(new Error("Invalid response format"))
             }
           } else {
-            console.error("ImgBB upload error response:", xhr.responseText)
+            console.error("Upload error response:", xhr.responseText)
             reject(new Error(`Failed to upload: ${xhr.statusText}`))
           }
         }
@@ -69,8 +68,8 @@ export default function PaymentClient({ order }: { order: any }) {
       })
 
       const result: any = await uploadPromise
-      if (result?.data?.url) {
-        setUploadedImageUrl(result.data.url)
+      if (result?.url) {
+        setUploadedImageUrl(result.url)
       } else {
         throw new Error("Invalid response from image host")
       }
