@@ -20,58 +20,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const formData = await req.formData()
-    const senderPhoneNumber = formData.get("senderPhoneNumber") as string
-    const receiptImage = formData.get("receiptImage") as File
+    const body = await req.json()
+    const senderPhoneNumber = body.senderPhoneNumber
+    const receiptImageUrl = body.receiptImageUrl
 
-    if (!senderPhoneNumber || !receiptImage) {
-      return new NextResponse("Missing fields (phone or image)", { status: 400 })
-    }
-
-    let receiptImageUrl = ""
-
-    // In local development, bypass Catbox completely since it hangs frequently.
-    if (process.env.NODE_ENV === "development") {
-      const { Buffer } = await import("buffer")
-      const { writeFile, mkdir } = await import("fs/promises")
-      const path = await import("path")
-      
-      const fileBytes = await receiptImage.arrayBuffer()
-      const buffer = Buffer.from(fileBytes)
-      const filename = `${Date.now()}-${receiptImage.name || 'receipt.png'}`
-      
-      const uploadDir = path.join(process.cwd(), "public", "uploads")
-      await mkdir(uploadDir, { recursive: true }).catch(() => {})
-      
-      const filepath = path.join(uploadDir, filename)
-      await writeFile(filepath, buffer)
-      
-      receiptImageUrl = `/uploads/${filename}`
-    } else {
-      // Production uses ImgBB (Catbox blocks Vercel IPs)
-      const fileBytes = await receiptImage.arrayBuffer()
-      const base64Data = Buffer.from(fileBytes).toString('base64')
-      
-      const imgbbForm = new FormData()
-      imgbbForm.append("key", process.env.IMGBB_API_KEY || "e1b9b1e2206bcfa7e8d7ea761bd0fb45")
-      imgbbForm.append("image", base64Data)
-
-      const response = await fetch("https://api.imgbb.com/1/upload", {
-        method: "POST",
-        body: imgbbForm,
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to upload receipt to ImgBB: ${response.statusText}`)
-      }
-
-      const result = await response.json()
-      
-      if (!result.success || !result.data || !result.data.url) {
-        throw new Error("Invalid response from image host")
-      }
-      
-      receiptImageUrl = result.data.url
+    if (!senderPhoneNumber || !receiptImageUrl) {
+      return new NextResponse("Missing fields (phone or image url)", { status: 400 })
     }
 
     // Save the Receipt URL to the database
