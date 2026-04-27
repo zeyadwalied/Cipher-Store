@@ -10,6 +10,8 @@ export default function PaymentClient({ order }: { order: any }) {
   const { clearCart } = useCartStore()
   const [phone, setPhone] = useState("")
   const [file, setFile] = useState<File | null>(null)
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loadingInitial, setLoadingInitial] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -26,26 +28,20 @@ export default function PaymentClient({ order }: { order: any }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
-    if (selectedFile) {
-      setFile(selectedFile)
-    }
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!phone || !file) return alert("الرجاء إدخال رقم الهاتف ورفع صورة التحويل")
-    setIsSubmitting(true)
+    if (!selectedFile) return
+    
+    setFile(selectedFile)
+    setIsUploadingImage(true)
     setUploadProgress(0)
 
     try {
       const formData = new FormData()
-      formData.append("senderPhoneNumber", phone)
-      formData.append("receiptImage", file)
+      formData.append("image", selectedFile)
 
       const xhr = new XMLHttpRequest()
-      xhr.open("POST", `/api/checkout/${order.id}/payment`)
+      xhr.open("POST", "/api/upload")
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -54,22 +50,59 @@ export default function PaymentClient({ order }: { order: any }) {
         }
       }
 
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          clearCart()
-          router.push(`/order-confirmation/${order.id}`)
-        } else {
-          alert(`فشل رفع البيانات: ${xhr.status} - ${xhr.responseText}`)
-          setIsSubmitting(false)
+      const uploadPromise = new Promise((resolve, reject) => {
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve(JSON.parse(xhr.responseText))
+            } catch {
+              reject(new Error("Invalid response format"))
+            }
+          } else {
+            console.error("Upload error response:", xhr.responseText)
+            reject(new Error(`Failed to upload: ${xhr.statusText}`))
+          }
         }
-      }
+        xhr.onerror = () => reject(new Error("Network Error during image upload"))
+        xhr.send(formData)
+      })
 
-      xhr.onerror = () => {
-        alert("حدث خطأ أثناء الاتصال بالخادم")
+      const result: any = await uploadPromise
+      if (result?.url) {
+        setUploadedImageUrl(result.url)
+      } else {
+        throw new Error("Invalid response from image host")
+      }
+    } catch (err: any) {
+      console.error("Upload error:", err)
+      alert("فشل رفع الصورة، يرجى المحاولة مرة أخرى لاحقاً.")
+      setFile(null)
+    } finally {
+      setIsUploadingImage(false)
+      setUploadProgress(0)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!phone || !uploadedImageUrl) return alert("الرجاء إدخال رقم الهاتف وانتظار إكتمال رفع الصورة")
+    setIsSubmitting(true)
+
+    try {
+      const res = await fetch(`/api/checkout/${order.id}/payment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ senderPhoneNumber: phone, receiptImageUrl: uploadedImageUrl })
+      })
+
+      if (res.ok) {
+        clearCart()
+        router.push(`/order-confirmation/${order.id}`)
+      } else {
+        const text = await res.text()
+        alert(`فشل إرسال الطلب: ${res.status} - ${text}`)
         setIsSubmitting(false)
       }
-
-      xhr.send(formData)
     } catch (err: any) {
       console.error(err)
       alert(`حدث خطأ أثناء الاتصال بالخادم: ${err.message}`)
@@ -195,14 +228,23 @@ export default function PaymentClient({ order }: { order: any }) {
               <div className="w-2 h-2 rounded-full bg-[#00f5ff]" /> ارفع صورة إثبات التحويل
             </label>
 
-            <label className={`w-full h-44 border-2 border-dashed rounded-2xl flex items-center justify-center cursor-pointer transition-all hover:bg-[#1c1c21] ${file ? 'border-[#00ff41] bg-[#00ff41]/5' : 'border-[#27272a] hover:border-[#00f5ff]/50 bg-[#09090b]'}`}>
-              {file ? (
-                <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
-                  <div className="h-16 w-16 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
-                    <CheckCircle className="w-8 h-8 text-[#00ff41]" />
+            <label className={`relative w-full h-44 border-2 border-dashed rounded-2xl flex items-center justify-center cursor-pointer transition-all hover:bg-[#1c1c21] overflow-hidden ${uploadedImageUrl ? 'border-transparent' : isUploadingImage ? 'border-[#00f5ff] bg-[#00f5ff]/5' : 'border-[#27272a] hover:border-[#00f5ff]/50 bg-[#09090b]'}`}>
+              {uploadedImageUrl ? (
+                <div className="flex flex-col items-center w-full h-full relative group">
+                  <img src={uploadedImageUrl} alt="Receipt" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <CheckCircle className="w-10 h-10 text-[#00ff41] mb-2" />
+                    <span className="text-white font-bold">تم إرفاق الإثبات بنجاح</span>
+                    <span className="text-xs text-gray-300 mt-1">اضغط لاستبدال الصورة</span>
                   </div>
-                  <span className="text-[#00ff41] font-bold">تم إرفاق إثبات الدفع</span>
-                  <span className="text-xs text-gray-500 mt-1">{file.name}</span>
+                </div>
+              ) : isUploadingImage ? (
+                <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
+                  <Loader2 className="w-10 h-10 text-[#00f5ff] animate-spin mb-3" />
+                  <span className="text-[#00f5ff] font-bold">جاري رفع الصورة... {uploadProgress}%</span>
+                  <div className="w-48 h-1 bg-gray-800 rounded-full mt-3 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[#00f5ff] to-[#a855f7] transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center">
@@ -216,8 +258,8 @@ export default function PaymentClient({ order }: { order: any }) {
               <input
                 type="file"
                 accept="image/*"
-                required
                 className="hidden"
+                disabled={isUploadingImage}
                 onChange={handleImageUpload}
               />
             </label>
@@ -225,21 +267,19 @@ export default function PaymentClient({ order }: { order: any }) {
 
           <button
             type="submit"
-            disabled={isSubmitting || !phone || !file}
+            disabled={isSubmitting || isUploadingImage || !phone || !uploadedImageUrl}
             className="w-full bg-gradient-to-r from-[#00f5ff] to-[#a855f7] hover:brightness-110 text-white font-bold py-5 rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-3 text-xl shadow-[0_10px_30px_rgba(168,85,247,0.3)] mt-8 relative overflow-hidden"
           >
-            {isSubmitting && uploadProgress > 0 && uploadProgress < 100 && (
-              <div 
-                className="absolute left-0 top-0 bottom-0 bg-white/20 transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              />
-            )}
-            
             <div className="relative z-10 flex items-center gap-3">
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-6 w-6 animate-spin" />
-                  {uploadProgress < 100 ? `جاري الرفع... ${uploadProgress}%` : 'جاري التحقق والمعالجة...'}
+                  جاري التحقق والمعالجة...
+                </>
+              ) : isUploadingImage ? (
+                <>
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  يرجى الانتظار حتى اكتمال رفع الصورة...
                 </>
               ) : (
                 <>
